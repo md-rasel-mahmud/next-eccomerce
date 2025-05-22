@@ -13,18 +13,22 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useRegisterMutation } from "@/lib/store/api-services/auth.service";
+import { useRouter } from "next/navigation";
 
 const RegisterPage = () => {
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useRouter();
+
+  const router = useRouter();
+
+  const [register] = useRegisterMutation();
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,26 +44,16 @@ const RegisterPage = () => {
 
     setIsLoading(true);
 
-    // Mock registration process
-    setTimeout(() => {
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          id: Math.floor(Math.random() * 1000).toString(),
-          name: name,
-          email: email,
-          role: "user",
-        })
-      );
+    register({
+      body: {
+        name,
+        phone,
+        password,
+      },
+      router,
+    });
 
-      toast({
-        title: "Registration successful",
-        description: "Your account has been created successfully!",
-      });
-
-      navigate.push("/");
-      setIsLoading(false);
-    }, 1000);
+    setIsLoading(false);
   };
 
   return (
@@ -88,13 +82,13 @@ const RegisterPage = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="phone">Phone</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="your.email@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="phone"
+                  type="text"
+                  placeholder="Enter your phone number"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                   required
                 />
               </div>

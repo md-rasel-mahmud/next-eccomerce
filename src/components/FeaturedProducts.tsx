@@ -1,7 +1,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import ProductCard from "./ProductCard";
-import { Product } from "@/models/types";
+import { Product } from "@/types/types";
 import Link from "next/link";
 
 interface FeaturedProductsProps {

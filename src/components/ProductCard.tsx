@@ -4,7 +4,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Star, ShoppingCart, Check } from "lucide-react";
 import { useStore } from "@/context/StoreContext";
-import { Product } from "@/models/types";
+import { Product } from "@/types/types";
 import Link from "next/link";
 import Image from "next/image";
 

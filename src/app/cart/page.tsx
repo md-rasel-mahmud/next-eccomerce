@@ -11,15 +11,16 @@ import {
 } from "@/components/ui/card";
 import { useStore } from "@/context/StoreContext";
 import { toast } from "@/components/ui/use-toast";
-import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 const CartPage = () => {
   const { state, dispatch } = useStore();
   const router = useRouter();
-  const { user } = useAuth();
+  const { data } = useSession();
+  const user = data?.user;
 
   const updateQuantity = (productId: string, newQuantity: number) => {
     if (newQuantity < 1) return;

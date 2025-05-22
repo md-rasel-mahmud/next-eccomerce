@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
-import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,62 +14,42 @@ import {
 } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
+import { toast } from "@/hooks/use-toast";
 
 const LoginPage = () => {
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Mock login authentication
-    setTimeout(() => {
-      // For demo purposes, admin login with specific credentials
-      if (email === "admin@example.com" && password === "admin123") {
-        // Set admin role in local storage
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            id: "1",
-            name: "Admin User",
-            email: "admin@example.com",
-            role: "admin",
-          })
-        );
-        toast({
-          title: "Login successful",
-          description: "Welcome back, Admin!",
-        });
-        router.push("/admin");
-      } else if (email && password) {
-        // Set regular user in local storage
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            id: "2",
-            name: "Regular User",
-            email: email,
-            role: "user",
-          })
-        );
-        toast({
-          title: "Login successful",
-          description: "Welcome back!",
-        });
-        router.push("/");
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Login failed",
-          description: "Please check your credentials and try again.",
-        });
-      }
+    // sign in useing next-auth
+    const res = await signIn("credentials", {
+      phone,
+      password,
+      redirect: false,
+    });
+
+    if (res?.error) {
       setIsLoading(false);
-    }, 1000);
+      toast({
+        variant: "destructive",
+        title: "Login failed",
+        description: res.error,
+      });
+    } else {
+      setIsLoading(false);
+      toast({
+        title: "Login successful",
+        description: "Welcome back!",
+      });
+      router.push("/");
+    }
   };
 
   return (
@@ -84,20 +63,22 @@ const LoginPage = () => {
             Enter your email and password to access your account
           </CardDescription>
         </CardHeader>
+
         <CardContent>
           <form onSubmit={handleLogin}>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="phone">Phone</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="your.email@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="phone"
+                  type="text"
+                  placeholder="Enter your phone number"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                   required
                 />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
@@ -124,6 +105,7 @@ const LoginPage = () => {
                   </Button>
                 </div>
               </div>
+
               <Button
                 type="submit"
                 className="w-full bg-organic-500 hover:bg-organic-600"
@@ -131,6 +113,7 @@ const LoginPage = () => {
               >
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
+
               <div className="text-sm text-center text-muted-foreground">
                 <a
                   href="#"
@@ -142,6 +125,7 @@ const LoginPage = () => {
             </div>
           </form>
         </CardContent>
+
         <CardFooter className="flex justify-center">
           <div className="text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}

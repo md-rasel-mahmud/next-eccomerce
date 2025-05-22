@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/context/StoreContext";
-import { useAuth } from "@/context/AuthContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,14 +21,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/components/ui/use-toast";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { signOut, useSession } from "next-auth/react";
+import { Roles } from "@/enums/Roles.enum";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { dashboardItems } from "@/constants/nav-menu";
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { state } = useStore();
-  const { user, isAdmin, logout } = useAuth();
-  const router = useRouter();
+
+  const { data } = useSession();
+
+  const user = data?.user;
+  const isAdmin = user?.role === Roles.ADMIN;
 
   const cartItemCount = state.cart.reduce(
     (count, item) => count + item.quantity,
@@ -37,12 +42,21 @@ const Navbar: React.FC = () => {
   );
 
   const handleLogout = () => {
-    logout();
+    signOut({
+      callbackUrl: "/",
+    }).catch((error) => {
+      console.error("Error signing out:", error);
+      toast({
+        title: "Logout failed",
+        description: "An error occurred while logging out. Please try again.",
+        variant: "destructive",
+      });
+    });
+
     toast({
       title: "Logged out",
       description: "You have been successfully logged out",
     });
-    router.push("/");
   };
 
   return (
@@ -58,36 +72,15 @@ const Navbar: React.FC = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-8">
-            <Link
-              href="/"
-              className="text-foreground hover:text-organic-500 font-medium"
-            >
-              Home
-            </Link>
-            <Link
-              href="/products"
-              className="text-foreground hover:text-organic-500 font-medium"
-            >
-              Shop
-            </Link>
-            <Link
-              href="/categories"
-              className="text-foreground hover:text-organic-500 font-medium"
-            >
-              Categories
-            </Link>
-            <Link
-              href="/about"
-              className="text-foreground hover:text-organic-500 font-medium"
-            >
-              About
-            </Link>
-            <Link
-              href="/contact"
-              className="text-foreground hover:text-organic-500 font-medium"
-            >
-              Contact
-            </Link>
+            {dashboardItems.map((item) => (
+              <Link
+                key={item.link}
+                href={item.link}
+                className="text-foreground hover:text-organic-500 font-medium"
+              >
+                {item.title}
+              </Link>
+            ))}
           </nav>
 
           {/* Desktop Action Buttons */}
@@ -104,16 +97,24 @@ const Navbar: React.FC = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" aria-label="Account">
-                  <User className="h-5 w-5" />
+                  {user ? (
+                    <Avatar className="h-6 w-6">
+                      <AvatarFallback>
+                        {user?.name?.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  ) : (
+                    <User className="h-5 w-5" />
+                  )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {user ? (
                   <>
                     <DropdownMenuLabel>
-                      <div className="font-medium">Hello, {user.name}</div>
+                      <div className="font-medium">Hello, {user?.name}</div>
                       <div className="text-xs text-muted-foreground mt-1">
-                        {user.email}
+                        {user.role}
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
@@ -213,41 +214,16 @@ const Navbar: React.FC = () => {
         <div className="lg:hidden bg-white border-t border-organic-100 absolute w-full left-0 right-0 z-30 shadow-lg animate-fade-in">
           <div className="container mx-auto px-4 py-6">
             <nav className="flex flex-col space-y-4">
-              <Link
-                href="/"
-                className="px-4 py-2 text-foreground hover:bg-organic-50 rounded-md"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Home
-              </Link>
-              <Link
-                href="/products"
-                className="px-4 py-2 text-foreground hover:bg-organic-50 rounded-md"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Shop
-              </Link>
-              <Link
-                href="/categories"
-                className="px-4 py-2 text-foreground hover:bg-organic-50 rounded-md"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Categories
-              </Link>
-              <Link
-                href="/about"
-                className="px-4 py-2 text-foreground hover:bg-organic-50 rounded-md"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                About
-              </Link>
-              <Link
-                href="/contact"
-                className="px-4 py-2 text-foreground hover:bg-organic-50 rounded-md"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Contact
-              </Link>
+              {dashboardItems.map((item) => (
+                <Link
+                  key={item.link}
+                  href={item.link}
+                  className="px-4 py-2 text-foreground hover:bg-organic-50 rounded-md"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  {item.title}
+                </Link>
+              ))}
 
               {user ? (
                 <>
@@ -255,10 +231,11 @@ const Navbar: React.FC = () => {
                     <div className="px-4 py-2">
                       <div className="font-medium">Hello, {user.name}</div>
                       <div className="text-xs text-muted-foreground mt-1">
-                        {user.email}
+                        {user.role}
                       </div>
                     </div>
                   </div>
+
                   <Link
                     href="/profile"
                     className="px-4 py-2 text-foreground hover:bg-organic-50 rounded-md"
@@ -274,6 +251,7 @@ const Navbar: React.FC = () => {
                     <Package className="h-4 w-4 inline mr-2" />
                     My Orders
                   </Link>
+
                   {isAdmin && (
                     <Link
                       href="/admin"
@@ -283,6 +261,7 @@ const Navbar: React.FC = () => {
                       Admin Panel
                     </Link>
                   )}
+
                   <Button
                     variant="ghost"
                     className="justify-start px-4 py-6 h-auto text-destructive hover:text-destructive hover:bg-destructive/10"
@@ -347,6 +326,7 @@ const Navbar: React.FC = () => {
                   <X className="h-6 w-6" />
                 </Button>
               </div>
+
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input

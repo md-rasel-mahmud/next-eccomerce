@@ -11,73 +11,26 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
-import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/components/ui/use-toast";
-import { User } from "@/models/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserDashboard } from "@/components/UserDashboard";
-import { useRouter } from "next/navigation";
+import { signOut, useSession } from "next-auth/react";
 
 const ProfilePage: React.FC = () => {
-  const { user, logout } = useAuth();
-  const router = useRouter();
-  const [name, setName] = useState(user?.name || "");
-  const [email, setEmail] = useState(user?.email || "");
-  const [phone, setPhone] = useState(user?.phone || "");
   const [isEditing, setIsEditing] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Redirect if not logged in
-  React.useEffect(() => {
-    if (!user) {
-      router.push("/login");
-    }
-  }, [user, router]);
-
-  if (!user) {
-    return null;
-  }
+  const { data } = useSession();
+  const user = data?.user;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
 
     // Mock API call to update profile
-    try {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      // Update user data in localStorage (in a real app, this would be an API call)
-      const updatedUser: User = {
-        ...user,
-        name,
-        email,
-        phone,
-      };
-
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been updated successfully",
-      });
-
-      setIsEditing(false);
-    } catch (error: unknown) {
-      console.error("Error updating profile:", error);
-      toast({
-        title: "Error",
-        description: "There was an error updating your profile",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   const handleLogout = () => {
-    logout();
-    router.push("/");
+    signOut({ callbackUrl: "/login" });
+
     toast({
       title: "Logged out",
       description: "You have been logged out successfully",
@@ -119,21 +72,8 @@ const ProfilePage: React.FC = () => {
                     <Label htmlFor="name">Name</Label>
                     <Input
                       id="name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      disabled={!isEditing}
-                      className={isEditing ? "border-organic-300" : ""}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      disabled={!isEditing}
+                      value={user?.name}
+                      disabled={true}
                       className={isEditing ? "border-organic-300" : ""}
                     />
                   </div>
@@ -142,9 +82,9 @@ const ProfilePage: React.FC = () => {
                     <Label htmlFor="phone">Phone (optional)</Label>
                     <Input
                       id="phone"
-                      value={phone || ""}
-                      onChange={(e) => setPhone(e.target.value)}
-                      disabled={!isEditing}
+                      type="text"
+                      disabled={true}
+                      value={user?.phone}
                       className={isEditing ? "border-organic-300" : ""}
                     />
                   </div>
@@ -154,9 +94,9 @@ const ProfilePage: React.FC = () => {
                       <Button
                         type="submit"
                         className="bg-organic-500 hover:bg-organic-600"
-                        disabled={isSubmitting}
+                        disabled={false}
                       >
-                        {isSubmitting ? "Saving..." : "Save Changes"}
+                        {false ? "Saving..." : "Save Changes"}
                       </Button>
                       <Button
                         type="button"

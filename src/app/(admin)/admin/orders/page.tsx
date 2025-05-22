@@ -17,7 +17,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Order } from "@/models/types";
+import { Order } from "@/types/types";
 import { useToast } from "@/hooks/use-toast";
 import {
   Select,

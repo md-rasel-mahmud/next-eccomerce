@@ -1,6 +1,6 @@
 "use client";
 import React, { createContext, useContext, useReducer, ReactNode } from "react";
-import { CartItem, Product } from "../models/types";
+import { CartItem, Product } from "../types/types";
 
 // Define the store state
 interface StoreState {

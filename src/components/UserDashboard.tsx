@@ -8,10 +8,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useAuth } from "@/context/AuthContext";
+import { useSession } from "next-auth/react";
 
 export const UserDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { data } = useSession();
+
+  const user = data?.user;
 
   const dashboardItems = [
     {
@@ -55,7 +57,7 @@ export const UserDashboard: React.FC = () => {
     <div className="space-y-6 animate-fade-in">
       <div className="bg-gradient-to-br from-organic-500 to-organic-600 text-white rounded-lg p-6 shadow-md">
         <h2 className="text-xl font-semibold">Welcome back, {user?.name}</h2>
-        <p className="opacity-90 mt-1">Here's a summary of your account</p>
+        <p className="opacity-90 mt-1">Here&apos;s a summary of your account</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

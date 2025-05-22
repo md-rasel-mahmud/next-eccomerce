@@ -22,7 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Pencil, Trash2, Plus } from "lucide-react";
-import { Product } from "@/models/types";
+import { Product } from "@/types/types";
 import { products as initialProducts } from "@/data/products";
 import { useToast } from "@/hooks/use-toast";
 import {
