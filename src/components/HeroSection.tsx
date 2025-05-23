@@ -2,8 +2,13 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
+import axiosRequest from "@/lib/axios";
 
-const HeroSection: React.FC = () => {
+const HeroSection: React.FC = async () => {
+  const { data } = await axiosRequest.get("/setting");
+  const banner = data?.data[0]?.banner;
+
   return (
     <section className="relative bg-organic-50 hero-bg-pattern py-16 md:py-24">
       <div className="container mx-auto px-4">
@@ -12,15 +17,11 @@ const HeroSection: React.FC = () => {
             <span className="inline-block mb-3 bg-organic-100 text-organic-700 px-3 py-1 rounded-full text-sm font-medium">
               100% Certified Organic
             </span>
-            <h1 className="text-4xl lg:text-5xl xl:text-6xl font-display font-bold leading-tight mb-4">
-              Fresh <span className="text-organic-500">Organic</span> Food{" "}
-              <br className="hidden md:block" />
-              From Farm to Table
+            <h1 className="text-4xl lg:text-5xl xl:text-6xl font-display font-bold  leading-tight mb-4">
+              {banner?.title}
             </h1>
             <p className="text-lg text-muted-foreground mb-8 max-w-xl">
-              Discover the taste of nature with our premium selection of organic
-              fruits, natural sweeteners, and wholesome foods sourced directly
-              from local farmers.
+              {banner?.description}
             </p>
 
             <div className="flex flex-wrap gap-4">
@@ -64,24 +65,28 @@ const HeroSection: React.FC = () => {
 
           <div className="order-1 lg:order-2">
             <div className="relative">
-              <img
-                src="/placeholder.svg"
-                alt="Fresh Organic Products"
-                className="w-full h-auto rounded-xl shadow-lg animate-slide-in"
+              <Image
+                src={banner?.bannerImages?.[0] || "/placeholder.svg"}
+                alt={banner?.title || "Organic Food"}
+                className="w-full h-[65vh] object-cover object-top rounded-xl shadow-lg animate-slide-in"
+                width={500}
+                height={500}
               />
-              <div className="absolute -bottom-5 -left-5 bg-white p-3 rounded-lg shadow-lg">
-                <div className="bg-organic-50 p-2 rounded-md flex items-center gap-2">
-                  <div className="bg-organic-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-medium">
-                    20%
-                  </div>
-                  <div className="text-sm">
-                    <p className="font-medium">Special Offer</p>
-                    <p className="text-xs text-muted-foreground">
-                      On first order
-                    </p>
+              {banner?.hasOffer && (
+                <div className="absolute top-5 right-5 bg-white p-3 rounded-lg shadow-lg">
+                  <div className="bg-organic-500 text-white rounded-md p-2 flex items-center gap-2">
+                    <div className="text-sm">
+                      <p className="font-medium">{banner.offer.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {banner.offer.description}
+                      </p>
+                    </div>
+                    <span className="text-xl font-bold">
+                      {banner.offer.amount}%
+                    </span>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

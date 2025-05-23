@@ -26,13 +26,15 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const fontClass = `${geistSans.variable} ${geistMono.variable}`;
+
   return (
     <html lang="en">
       <head>
         <meta name="grammarly" content="false" />
       </head>
 
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body className={fontClass}>
         <NextTopLoader color="#4A7C59" />
 
         <Providers>

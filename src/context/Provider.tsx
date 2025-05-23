@@ -9,19 +9,31 @@ import { store } from "@/lib/store/store";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { SessionProvider } from "next-auth/react";
+import { SWRConfig } from "swr";
 
 const queryClient = new QueryClient();
 
 export default function Providers({ children }: { children: ReactNode }) {
+  if (typeof window === "undefined") {
+    return <>{children}</>;
+  }
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <SessionProvider>
           <Provider store={store}>
-            <StoreProvider>{children}</StoreProvider>
+            <SWRConfig
+              value={{
+                fetcher: (url) => fetch(url).then((res) => res.json()),
+                revalidateOnFocus: false,
+                shouldRetryOnError: false,
+              }}
+            >
+              <StoreProvider>{children}</StoreProvider>
 
-            <Toaster />
-            <Sonner />
+              <Toaster />
+              <Sonner />
+            </SWRConfig>
           </Provider>
         </SessionProvider>
       </TooltipProvider>

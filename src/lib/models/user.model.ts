@@ -1,4 +1,3 @@
-// lib/models/User.ts
 import { Roles } from "@/enums/Roles.enum";
 import mongoose, { Document, Model, Schema } from "mongoose";
 

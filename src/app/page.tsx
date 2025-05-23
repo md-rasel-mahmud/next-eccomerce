@@ -1,5 +1,4 @@
-"use client";
-import React from "react";
+import React, { Suspense } from "react";
 import HeroSection from "@/components/HeroSection";
 import FeaturedProducts from "@/components/FeaturedProducts";
 import CategorySection from "@/components/CategorySection";
@@ -12,7 +11,9 @@ const Home: React.FC = () => {
 
   return (
     <>
-      <HeroSection />
+      <Suspense fallback={<div>Loading...</div>}>
+        <HeroSection />
+      </Suspense>
 
       <FeaturedProducts
         title="Featured Products"

@@ -111,6 +111,8 @@ const AdminProducts: React.FC = () => {
     setIsAddDialogOpen(false);
     setFormData({});
 
+    console.log("newProduct", newProduct);
+
     toast({
       title: "Product Added",
       description: `${newProduct.name} has been added successfully.`,
