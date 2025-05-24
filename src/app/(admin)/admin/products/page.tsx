@@ -17,10 +17,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Pencil, Trash2, Plus } from "lucide-react";
 import { Product } from "@/types/types";
 import { products as initialProducts } from "@/data/products";
@@ -34,25 +30,55 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { FormInputConfig } from "@/components/common/form/FormInput";
+import { useForm, FieldValues } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  IProduct,
+  PRODUCT_DEFAULT_VALUES,
+  productValidation,
+} from "@/lib/models/product.model";
+import FormModal from "@/components/common/form/FormModal";
+import { useFetchMutation } from "@/hooks/use-fetch-mutation";
+import axiosRequest from "@/lib/axios";
+import useSWR, { mutate } from "swr";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const AdminProducts: React.FC = () => {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
-  const [formData, setFormData] = useState<Partial<Product>>({
-    name: "",
-    description: "",
-    price: 0,
-    category: "",
-    stockQuantity: 0,
-    featured: false,
-    seasonal: false,
-    inStock: true,
+  const [crudModalState, setCrudModalState] = useState<{
+    title: string;
+    submitText: string;
+    isUpdate: boolean;
+    productId?: string;
+  }>({
+    title: "",
+    submitText: "",
+    isUpdate: false,
   });
 
+  const { data: productList } = useSWR(
+    "/product",
+    (url) => axiosRequest.get(url).then((res) => res.data),
+    {
+      fallbackData: initialProducts,
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
+  );
+
   const { toast } = useToast();
+
+  const { control, handleSubmit, setError, reset } = useForm<IProduct>({
+    defaultValues: PRODUCT_DEFAULT_VALUES,
+    resolver: zodResolver(productValidation),
+    mode: "all",
+  });
+
+  const { isLoading, mutateFn } = useFetchMutation();
 
   // Current page state for pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -69,130 +95,33 @@ const AdminProducts: React.FC = () => {
   // Calculate total pages
   const totalPages = Math.ceil(products.length / productsPerPage);
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]:
-        name === "price" || name === "stockQuantity"
-          ? parseFloat(value)
-          : value,
-    }));
-  };
-
-  const handleSwitchChange = (name: string, checked: boolean) => {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: checked,
-    }));
-  };
-
-  const handleAddProduct = () => {
-    const newProduct: Product = {
-      id: `${products.length + 1}`,
-      name: formData.name || "New Product",
-      slug: formData.name?.toLowerCase().replace(/\s+/g, "-") || "new-product",
-      description: formData.description || "Product description",
-      price: formData.price || 0,
-      images: ["/placeholder.svg"],
-      category: formData.category || "Uncategorized",
-      tags: [],
-      featured: formData.featured || false,
-      seasonal: formData.seasonal || false,
-      inStock: formData.inStock !== undefined ? formData.inStock : true,
-      stockQuantity: formData.stockQuantity || 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    setProducts([...products, newProduct]);
-    setIsAddDialogOpen(false);
-    setFormData({});
-
-    console.log("newProduct", newProduct);
-
-    toast({
-      title: "Product Added",
-      description: `${newProduct.name} has been added successfully.`,
-    });
-  };
-
-  const handleEditProduct = () => {
-    if (!currentProduct) return;
-
-    const updatedProducts = products.map((product) =>
-      product.id === currentProduct.id
-        ? {
-            ...product,
-            name: formData.name || product.name,
-            description: formData.description || product.description,
-            price:
-              formData.price !== undefined ? formData.price : product.price,
-            category: formData.category || product.category,
-            featured:
-              formData.featured !== undefined
-                ? formData.featured
-                : product.featured,
-            seasonal:
-              formData.seasonal !== undefined
-                ? formData.seasonal
-                : product.seasonal,
-            inStock:
-              formData.inStock !== undefined
-                ? formData.inStock
-                : product.inStock,
-            stockQuantity:
-              formData.stockQuantity !== undefined
-                ? formData.stockQuantity
-                : product.stockQuantity,
-            updatedAt: new Date().toISOString(),
-          }
-        : product
-    );
-
-    setProducts(updatedProducts);
-    setIsEditDialogOpen(false);
-    setCurrentProduct(null);
-    setFormData({});
-
-    toast({
-      title: "Product Updated",
-      description: "The product has been updated successfully.",
-    });
-  };
-
   const handleDeleteProduct = () => {
-    if (!currentProduct) return;
+    mutateFn(
+      () => axiosRequest.delete(`/product/${crudModalState.productId}`),
+      () => {
+        setIsDeleteDialogOpen(false);
+        setCurrentProduct(null);
 
-    const updatedProducts = products.filter(
-      (product) => product.id !== currentProduct.id
+        mutate(
+          "/product",
+          (prevData?: { data: IProduct[] }) => {
+            // Filter out the deleted product
+            const updatedProducts = prevData?.data.filter(
+              (product) => product._id !== crudModalState?.productId
+            );
+
+            return {
+              ...prevData,
+              data: updatedProducts || [],
+            };
+          },
+          {
+            revalidate: false,
+          }
+        );
+      },
+      setError
     );
-    setProducts(updatedProducts);
-    setIsDeleteDialogOpen(false);
-    setCurrentProduct(null);
-
-    toast({
-      title: "Product Deleted",
-      description: "The product has been deleted successfully.",
-      variant: "destructive",
-    });
-  };
-
-  const openEditDialog = (product: Product) => {
-    setCurrentProduct(product);
-    setFormData({
-      name: product.name,
-      description: product.description,
-      price: product.price,
-      category: product.category,
-      featured: product.featured,
-      seasonal: product.seasonal,
-      inStock: product.inStock,
-      stockQuantity: product.stockQuantity,
-    });
-    setIsEditDialogOpen(true);
   };
 
   const openDeleteDialog = (product: Product) => {
@@ -200,12 +129,156 @@ const AdminProducts: React.FC = () => {
     setIsDeleteDialogOpen(true);
   };
 
+  const formSubmitHandler = (formData: IProduct) => {
+    const body = {
+      ...formData,
+    };
+
+    if (formData._id) {
+      delete body._id; // Remove _id if present to avoid conflicts
+    }
+
+    // Handle form submission logic here
+    if (crudModalState.isUpdate) {
+      // Update existing product
+      mutateFn(
+        () => axiosRequest.patch(`/product/${crudModalState.productId}`, body),
+        () => {
+          setIsAddDialogOpen(false);
+          reset(PRODUCT_DEFAULT_VALUES);
+
+          mutate(
+            "/product",
+            (prevData?: { data: IProduct[] }) => {
+              // Update the local data with the updated product
+
+              const cloneProducts = [...(prevData?.data || [])];
+
+              const productIndex = prevData?.data.findIndex(
+                (product) => product._id === crudModalState.productId
+              );
+
+              if (productIndex !== undefined && productIndex >= 0) {
+                cloneProducts[productIndex] = formData as IProduct;
+                cloneProducts[productIndex]._id = crudModalState.productId;
+              }
+
+              // Sort by createdAt in descending order
+              return {
+                ...prevData,
+                data: cloneProducts,
+              };
+            },
+            {
+              revalidate: false,
+            }
+          );
+        },
+        setError
+      );
+    } else {
+      mutateFn(
+        () => axiosRequest.post("/product", body),
+        () => {
+          setIsAddDialogOpen(false);
+          reset(PRODUCT_DEFAULT_VALUES);
+
+          mutate(
+            "/product",
+            (prevData?: { data: IProduct[] }) => {
+              // Update the local data with the new product
+              const data = [formData as IProduct, ...(prevData?.data || [])];
+
+              // Sort by createdAt in descending order
+              return {
+                ...prevData,
+                data,
+              };
+            },
+            {
+              revalidate: false,
+            }
+          );
+        },
+        setError
+      );
+    }
+  };
+
+  const formInputData: FormInputConfig[] = [
+    {
+      name: "name",
+      label: "Product Name",
+      type: "text",
+      placeholder: "Enter product name",
+      required: true,
+    },
+    {
+      name: "slug",
+      label: "Slug",
+      type: "text",
+      placeholder: "Enter product slug",
+      required: true,
+    },
+    {
+      name: "price",
+      label: "Price",
+      type: "number",
+      placeholder: "Enter product price",
+      required: true,
+    },
+    {
+      name: "stockQuantity",
+      label: "Stock Quantity",
+      type: "number",
+      placeholder: "Enter stock quantity",
+      required: true,
+    },
+    {
+      name: "description",
+      label: "Description",
+      type: "textarea",
+      placeholder: "Enter product description",
+      className: "md:col-span-2",
+    },
+    {
+      name: "categoryId",
+      label: "Category",
+      type: "select",
+      required: true,
+      className: "md:col-span-2",
+      options: [
+        { value: "electronics", label: "Electronics" },
+        { value: "clothing", label: "Clothing" },
+        { value: "home-appliances", label: "Home Appliances" },
+        { value: "books", label: "Books" },
+      ],
+    },
+    {
+      name: "isFeatured",
+      label: "Featured Product",
+      type: "switch",
+    },
+    {
+      name: "isSeasonal",
+      label: "Seasonal Product",
+      type: "switch",
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Product Management</h1>
         <Button
-          onClick={() => setIsAddDialogOpen(true)}
+          onClick={() => {
+            setCrudModalState({
+              title: "Add New Product",
+              submitText: "Add Product",
+              isUpdate: false,
+            });
+            setIsAddDialogOpen(true);
+          }}
           className="bg-green-600 hover:bg-green-700"
         >
           <Plus className="mr-2 h-4 w-4" />
@@ -227,27 +300,21 @@ const AdminProducts: React.FC = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {currentProducts.map((product) => (
-              <TableRow key={product.id}>
+            {productList?.data?.map((product: IProduct, index: number) => (
+              <TableRow key={`${product._id}-${index}`}>
                 <TableCell className="font-medium">{product.name}</TableCell>
-                <TableCell>${product.price.toFixed(2)}</TableCell>
-                <TableCell>{product.category}</TableCell>
+                <TableCell>BDT: {product.price.toFixed(2)}</TableCell>
+                <TableCell>{product.categoryId}</TableCell>
                 <TableCell>{product.stockQuantity}</TableCell>
                 <TableCell>
                   <span
-                    className={`inline-block px-2 py-1 text-xs rounded-full ${
-                      product.inStock
-                        ? product.stockQuantity > 10
-                          ? "bg-green-100 text-green-800"
-                          : "bg-yellow-100 text-yellow-800"
-                        : "bg-red-100 text-red-800"
+                    className={`inline-block px-2 py-1 text-xs rounded-full whitespace-nowrap ${
+                      product.stockQuantity > 10
+                        ? "bg-green-100 text-green-800"
+                        : "bg-yellow-100 text-yellow-800"
                     }`}
                   >
-                    {product.inStock
-                      ? product.stockQuantity > 10
-                        ? "In Stock"
-                        : "Low Stock"
-                      : "Out of Stock"}
+                    {product.stockQuantity > 10 ? "In Stock" : "Low Stock"}
                   </span>
                 </TableCell>
                 <TableCell>
@@ -255,7 +322,16 @@ const AdminProducts: React.FC = () => {
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => openEditDialog(product)}
+                      onClick={() => {
+                        reset(product);
+                        setCrudModalState({
+                          title: "Edit Product",
+                          submitText: "Update Product",
+                          isUpdate: true,
+                          productId: String(product._id),
+                        });
+                        setIsAddDialogOpen(true);
+                      }}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -263,7 +339,13 @@ const AdminProducts: React.FC = () => {
                       variant="outline"
                       size="icon"
                       className="text-red-500 hover:text-red-600"
-                      onClick={() => openDeleteDialog(product)}
+                      onClick={() => {
+                        setCrudModalState((prev) => ({
+                          ...prev,
+                          productId: String(product._id),
+                        }));
+                        openDeleteDialog(product);
+                      }}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -326,232 +408,24 @@ const AdminProducts: React.FC = () => {
         </div>
       </div>
 
-      {/* Add Product Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Add New Product</DialogTitle>
-            <DialogDescription>
-              Enter the details for the new product below.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Product Name</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={formData.name || ""}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="price">Price</Label>
-                <Input
-                  id="price"
-                  name="price"
-                  type="number"
-                  value={formData.price || ""}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                name="description"
-                value={formData.description || ""}
-                onChange={handleInputChange}
-                rows={4}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Input
-                  id="category"
-                  name="category"
-                  value={formData.category || ""}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="stockQuantity">Stock Quantity</Label>
-                <Input
-                  id="stockQuantity"
-                  name="stockQuantity"
-                  type="number"
-                  value={formData.stockQuantity || ""}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="featured"
-                  checked={formData.featured || false}
-                  onCheckedChange={(checked) =>
-                    handleSwitchChange("featured", checked)
-                  }
-                />
-                <Label htmlFor="featured">Featured</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="seasonal"
-                  checked={formData.seasonal || false}
-                  onCheckedChange={(checked) =>
-                    handleSwitchChange("seasonal", checked)
-                  }
-                />
-                <Label htmlFor="seasonal">Seasonal</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="inStock"
-                  checked={
-                    formData.inStock !== undefined ? formData.inStock : true
-                  }
-                  onCheckedChange={(checked) =>
-                    handleSwitchChange("inStock", checked)
-                  }
-                />
-                <Label htmlFor="inStock">In Stock</Label>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddProduct}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              Add Product
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Product Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Edit Product</DialogTitle>
-            <DialogDescription>
-              Update the details for {currentProduct?.name}.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="editName">Product Name</Label>
-                <Input
-                  id="editName"
-                  name="name"
-                  value={formData.name || ""}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="editPrice">Price</Label>
-                <Input
-                  id="editPrice"
-                  name="price"
-                  type="number"
-                  value={formData.price}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="editDescription">Description</Label>
-              <Textarea
-                id="editDescription"
-                name="description"
-                value={formData.description || ""}
-                onChange={handleInputChange}
-                rows={4}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="editCategory">Category</Label>
-                <Input
-                  id="editCategory"
-                  name="category"
-                  value={formData.category || ""}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="editStockQuantity">Stock Quantity</Label>
-                <Input
-                  id="editStockQuantity"
-                  name="stockQuantity"
-                  type="number"
-                  value={formData.stockQuantity}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="editFeatured"
-                  checked={formData.featured || false}
-                  onCheckedChange={(checked) =>
-                    handleSwitchChange("featured", checked)
-                  }
-                />
-                <Label htmlFor="editFeatured">Featured</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="editSeasonal"
-                  checked={formData.seasonal || false}
-                  onCheckedChange={(checked) =>
-                    handleSwitchChange("seasonal", checked)
-                  }
-                />
-                <Label htmlFor="editSeasonal">Seasonal</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="editInStock"
-                  checked={formData.inStock || false}
-                  onCheckedChange={(checked) =>
-                    handleSwitchChange("inStock", checked)
-                  }
-                />
-                <Label htmlFor="editInStock">In Stock</Label>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsEditDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleEditProduct}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Add or edit Product Dialog */}
+      <FormModal
+        {...{
+          title: crudModalState.title,
+          control,
+          formData: formInputData,
+          inputSize: "md",
+          isLoading,
+          isAddDialogOpen,
+          setIsAddDialogOpen,
+          formSubmitHandler: handleSubmit(formSubmitHandler),
+          submitText: crudModalState.submitText,
+        }}
+      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[400px]">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Confirm Deletion</DialogTitle>
             <DialogDescription>
@@ -562,12 +436,25 @@ const AdminProducts: React.FC = () => {
           <DialogFooter>
             <Button
               variant="outline"
+              type="button"
+              disabled={isLoading}
               onClick={() => setIsDeleteDialogOpen(false)}
             >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDeleteProduct}>
-              Delete
+            <Button
+              variant="destructive"
+              onClick={handleDeleteProduct}
+              disabled={isLoading}
+              type="button"
+            >
+              {isLoading ? (
+                <>
+                  Loading... <Skeleton className="h-5 w-5" />
+                </>
+              ) : (
+                "Delete"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

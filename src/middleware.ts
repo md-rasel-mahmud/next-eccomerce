@@ -4,8 +4,10 @@ import { NextResponse } from "next/server";
 
 import type { NextRequest } from "next/server";
 
-export async function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest, res: NextResponse) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+
+  console.log("res :>> ", res);
 
   if (!token) {
     return NextResponse.redirect(new URL("/login", req.url));

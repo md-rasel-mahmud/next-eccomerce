@@ -25,7 +25,6 @@ type ProductDetailsPageProps = {
 const ProductDetailsPage: FC<ProductDetailsPageProps> = ({
   params: { slug },
 }) => {
-  console.log("slug", slug);
   const product = getProductBySlug(slug || "");
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);

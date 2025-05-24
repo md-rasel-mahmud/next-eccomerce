@@ -31,3 +31,37 @@ export async function validateRequest<T>(
     };
   }
 }
+
+type ParsedDuplicateError = {
+  field: string;
+  message: string;
+};
+
+export function parseMongooseDuplicateKeyError(
+  error: unknown
+): ParsedDuplicateError[] {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code: number }).code === 11000 &&
+    "keyPattern" in error &&
+    "keyValue" in error
+  ) {
+    const keyPattern = (error as { keyPattern: Record<string, unknown> })
+      .keyPattern;
+    return Object.keys(keyPattern).map((field) => ({
+      field,
+      message: `${
+        field.charAt(0).toUpperCase() + field.slice(1)
+      } must be unique.`,
+    }));
+  }
+
+  return [
+    {
+      field: "unknown",
+      message: "Duplicate key error",
+    },
+  ];
+}

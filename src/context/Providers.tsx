@@ -7,16 +7,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Provider } from "react-redux";
 import { store } from "@/lib/store/store";
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster as Sonner } from "sonner";
 import { SessionProvider } from "next-auth/react";
 import { SWRConfig } from "swr";
 
 const queryClient = new QueryClient();
 
 export default function Providers({ children }: { children: ReactNode }) {
-  if (typeof window === "undefined") {
-    return <>{children}</>;
-  }
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -32,7 +29,7 @@ export default function Providers({ children }: { children: ReactNode }) {
               <StoreProvider>{children}</StoreProvider>
 
               <Toaster />
-              <Sonner />
+              <Sonner richColors />
             </SWRConfig>
           </Provider>
         </SessionProvider>

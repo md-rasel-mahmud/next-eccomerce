@@ -15,7 +15,6 @@ type CategoryPageProps = {
 
 const CategoryPage: FC<CategoryPageProps> = () => {
   const { slug } = useParams();
-  console.log("slug", slug);
 
   // Ensure slug is always a string
   const slugStr = Array.isArray(slug) ? slug[0] : slug || "";

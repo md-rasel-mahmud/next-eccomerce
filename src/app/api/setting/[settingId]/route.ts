@@ -6,12 +6,12 @@ import { NextRequest } from "next/server";
 // @PATCH - Update settings
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: Types.ObjectId } }
+  { params }: { params: { settingId: Types.ObjectId } }
 ) {
   await connectDB();
   const { banner, footer, socials } = await req.json();
 
-  const settingId = params.id;
+  const settingId = params.settingId;
 
   if (!settingId) {
     return new Response(JSON.stringify({ message: "Setting ID is required" }), {

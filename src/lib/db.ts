@@ -5,8 +5,6 @@ export const connectDB = async () => {
   if (mongoose.connections[0].readyState >= 1) return;
 
   try {
-    console.log("MONGODB_URI:", process.env.MONGODB_URI);
-
     await mongoose.connect(process.env.MONGODB_URI!, {
       dbName: "E_COMMERCE",
     });

@@ -15,7 +15,7 @@ import {
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 const LoginPage = () => {
   const [phone, setPhone] = useState("");
@@ -37,17 +37,15 @@ const LoginPage = () => {
 
     if (res?.error) {
       setIsLoading(false);
-      toast({
-        variant: "destructive",
-        title: "Login failed",
-        description: res.error,
+      toast.error("Success", {
+        description: "Login failed",
       });
     } else {
       setIsLoading(false);
-      toast({
-        title: "Login successful",
-        description: "Welcome back!",
+      toast.success("Success", {
+        description: "Login successful",
       });
+
       router.push("/");
     }
   };

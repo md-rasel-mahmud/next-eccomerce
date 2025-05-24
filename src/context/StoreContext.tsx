@@ -139,10 +139,6 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
 
         // Initialize state with stored cart and calculate totals
         if (parsedCart.length > 0) {
-          const totals = calculateTotals(parsedCart);
-
-          console.log("totals", totals);
-
           dispatch({ type: "CLEAR_CART" });
           parsedCart.forEach((item) => {
             dispatch({

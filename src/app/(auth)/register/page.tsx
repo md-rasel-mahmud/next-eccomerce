@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
-import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,8 +13,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import Link from "next/link";
-import { useRegisterMutation } from "@/lib/store/api-services/auth.service";
 import { useRouter } from "next/navigation";
+import { useFetchMutation } from "@/hooks/use-fetch-mutation";
+import axiosRequest from "@/lib/axios";
+import { toast } from "sonner";
 
 const RegisterPage = () => {
   const [name, setName] = useState("");
@@ -24,36 +25,27 @@ const RegisterPage = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+
+  const { isLoading, mutateFn } = useFetchMutation();
 
   const router = useRouter();
 
-  const [register] = useRegisterMutation();
-
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      toast({
-        variant: "destructive",
-        title: "Passwords do not match",
-        description: "Please make sure your passwords match.",
-      });
+      toast.error("Passwords do not match");
       return;
     }
 
-    setIsLoading(true);
+    const data = await mutateFn(
+      () => axiosRequest.post("/register", { name, phone, password }),
+      () => {
+        router.push("/login");
+      }
+    );
 
-    register({
-      body: {
-        name,
-        phone,
-        password,
-      },
-      router,
-    });
-
-    setIsLoading(false);
+    console.log("data", data);
   };
 
   return (

@@ -68,7 +68,7 @@ const authOptions: NextAuthOptions = {
         session.user.role = token.role as Roles;
         session.user.phone = token.phone as string;
       }
-      console.log("session", session);
+
       return session;
     },
   },
