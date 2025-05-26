@@ -1,13 +1,5 @@
 "use client";
-import React, { useState } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -17,25 +9,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, Plus } from "lucide-react";
-import { Product } from "@/types/types";
+import { Plus } from "lucide-react";
 import { products as initialProducts } from "@/data/products";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
 import { FormInputConfig } from "@/components/common/form/FormInput";
 import { useForm, FieldValues } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   IProduct,
   PRODUCT_DEFAULT_VALUES,
+  ProductTypeWithId,
   productValidation,
 } from "@/lib/models/product.model";
 import FormModal from "@/components/common/form/FormModal";
@@ -43,12 +25,14 @@ import { useFetchMutation } from "@/hooks/use-fetch-mutation";
 import axiosRequest from "@/lib/axios";
 import useSWR, { mutate } from "swr";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ReusableTable } from "@/components/common/table/ReusableTable";
+import { useSearchParams } from "next/navigation";
+import React from "react";
 
 const AdminProducts: React.FC = () => {
-  const [products, setProducts] = useState<Product[]>(initialProducts);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [currentProduct, setCurrentProduct] = useState<Product | null>(null);
+  const [currentProduct, setCurrentProduct] = useState<IProduct | null>(null);
   const [crudModalState, setCrudModalState] = useState<{
     title: string;
     submitText: string;
@@ -60,8 +44,10 @@ const AdminProducts: React.FC = () => {
     isUpdate: false,
   });
 
-  const { data: productList } = useSWR(
-    "/product",
+  const searchParams = useSearchParams();
+
+  const { data: productList, isLoading: productListLoading } = useSWR(
+    `/product?${searchParams.toString()}`,
     (url) => axiosRequest.get(url).then((res) => res.data),
     {
       fallbackData: initialProducts,
@@ -70,30 +56,13 @@ const AdminProducts: React.FC = () => {
     }
   );
 
-  const { toast } = useToast();
-
-  const { control, handleSubmit, setError, reset } = useForm<IProduct>({
+  const { control, handleSubmit, setError, reset } = useForm<FieldValues>({
     defaultValues: PRODUCT_DEFAULT_VALUES,
     resolver: zodResolver(productValidation),
     mode: "all",
   });
 
   const { isLoading, mutateFn } = useFetchMutation();
-
-  // Current page state for pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const productsPerPage = 5;
-
-  // Get current products for the active page
-  const indexOfLastProduct = currentPage * productsPerPage;
-  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProducts = products.slice(
-    indexOfFirstProduct,
-    indexOfLastProduct
-  );
-
-  // Calculate total pages
-  const totalPages = Math.ceil(products.length / productsPerPage);
 
   const handleDeleteProduct = () => {
     mutateFn(
@@ -103,7 +72,7 @@ const AdminProducts: React.FC = () => {
         setCurrentProduct(null);
 
         mutate(
-          "/product",
+          `/product?${searchParams.toString()}`,
           (prevData?: { data: IProduct[] }) => {
             // Filter out the deleted product
             const updatedProducts = prevData?.data.filter(
@@ -124,12 +93,12 @@ const AdminProducts: React.FC = () => {
     );
   };
 
-  const openDeleteDialog = (product: Product) => {
+  const openDeleteDialog = (product: IProduct) => {
     setCurrentProduct(product);
     setIsDeleteDialogOpen(true);
   };
 
-  const formSubmitHandler = (formData: IProduct) => {
+  const formSubmitHandler = (formData: FieldValues) => {
     const body = {
       ...formData,
     };
@@ -148,7 +117,7 @@ const AdminProducts: React.FC = () => {
           reset(PRODUCT_DEFAULT_VALUES);
 
           mutate(
-            "/product",
+            `/product?${searchParams.toString()}`,
             (prevData?: { data: IProduct[] }) => {
               // Update the local data with the updated product
 
@@ -184,7 +153,7 @@ const AdminProducts: React.FC = () => {
           reset(PRODUCT_DEFAULT_VALUES);
 
           mutate(
-            "/product",
+            `/product?${searchParams.toString()}`,
             (prevData?: { data: IProduct[] }) => {
               // Update the local data with the new product
               const data = [formData as IProduct, ...(prevData?.data || [])];
@@ -272,6 +241,7 @@ const AdminProducts: React.FC = () => {
         <h1 className="text-3xl font-bold">Product Management</h1>
         <Button
           onClick={() => {
+            reset(PRODUCT_DEFAULT_VALUES);
             setCrudModalState({
               title: "Add New Product",
               submitText: "Add Product",
@@ -286,127 +256,51 @@ const AdminProducts: React.FC = () => {
         </Button>
       </div>
 
-      {/* Products Table */}
-      <div className="bg-white rounded-md shadow">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Stock</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {productList?.data?.map((product: IProduct, index: number) => (
-              <TableRow key={`${product._id}-${index}`}>
-                <TableCell className="font-medium">{product.name}</TableCell>
-                <TableCell>BDT: {product.price.toFixed(2)}</TableCell>
-                <TableCell>{product.categoryId}</TableCell>
-                <TableCell>{product.stockQuantity}</TableCell>
-                <TableCell>
-                  <span
-                    className={`inline-block px-2 py-1 text-xs rounded-full whitespace-nowrap ${
-                      product.stockQuantity > 10
-                        ? "bg-green-100 text-green-800"
-                        : "bg-yellow-100 text-yellow-800"
-                    }`}
-                  >
-                    {product.stockQuantity > 10 ? "In Stock" : "Low Stock"}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => {
-                        reset(product);
-                        setCrudModalState({
-                          title: "Edit Product",
-                          submitText: "Update Product",
-                          isUpdate: true,
-                          productId: String(product._id),
-                        });
-                        setIsAddDialogOpen(true);
-                      }}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="text-red-500 hover:text-red-600"
-                      onClick={() => {
-                        setCrudModalState((prev) => ({
-                          ...prev,
-                          productId: String(product._id),
-                        }));
-                        openDeleteDialog(product);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-
-        {/* Pagination */}
-        <div className="py-4">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  className={
-                    currentPage === 1 ? "pointer-events-none opacity-50" : ""
-                  }
-                />
-              </PaginationItem>
-
-              {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
-                const pageNumber = i + 1;
-                return (
-                  <PaginationItem key={i}>
-                    <PaginationLink
-                      onClick={() => setCurrentPage(pageNumber)}
-                      isActive={currentPage === pageNumber}
-                    >
-                      {pageNumber}
-                    </PaginationLink>
-                  </PaginationItem>
-                );
-              })}
-
-              {totalPages > 5 && (
-                <PaginationItem>
-                  <PaginationEllipsis />
-                </PaginationItem>
-              )}
-
-              <PaginationItem>
-                <PaginationNext
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                  className={
-                    currentPage === totalPages
-                      ? "pointer-events-none opacity-50"
-                      : ""
-                  }
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      </div>
+      <ReusableTable<ProductTypeWithId>
+        data={productList?.data || []}
+        columns={[
+          { header: "Name", accessor: "name" },
+          {
+            header: "Price",
+            accessor: (row) => `BDT: ${row.price.toFixed(2)}`,
+          },
+          { header: "Category", accessor: "categoryId" },
+          { header: "Stock", accessor: "stockQuantity" },
+          {
+            header: "Status",
+            accessor: (row) =>
+              row.stockQuantity > 10 ? (
+                <span className="inline-block px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 whitespace-nowrap">
+                  In Stock
+                </span>
+              ) : (
+                <span className="inline-block px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800 whitespace-nowrap">
+                  Low Stock
+                </span>
+              ),
+          },
+        ]}
+        pagination={productList?.pagination}
+        onEdit={(cell) => {
+          reset(cell);
+          setCrudModalState({
+            title: "Edit Product",
+            submitText: "Update Product",
+            isUpdate: true,
+            productId: String(cell._id),
+          });
+          setIsAddDialogOpen(true);
+        }}
+        onDelete={(cell) => {
+          setCrudModalState((prev) => ({
+            ...prev,
+            productId: String(cell._id),
+          }));
+          openDeleteDialog(cell);
+        }}
+        hasAction={true}
+        isLoading={productListLoading}
+      />
 
       {/* Add or edit Product Dialog */}
       <FormModal
@@ -418,7 +312,8 @@ const AdminProducts: React.FC = () => {
           isLoading,
           isAddDialogOpen,
           setIsAddDialogOpen,
-          formSubmitHandler: handleSubmit(formSubmitHandler),
+          handleSubmit,
+          formSubmitHandler,
           submitText: crudModalState.submitText,
         }}
       />

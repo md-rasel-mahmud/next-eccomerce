@@ -1,3 +1,4 @@
+"use client";
 import { FormInput, FormInputConfig } from "@/components/common/form/FormInput";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +20,9 @@ type FormModalProps = {
   isAddDialogOpen: boolean;
   setIsAddDialogOpen: (open: boolean) => void;
   formSubmitHandler: SubmitHandler<FieldValues>;
+  handleSubmit: (
+    onValid: SubmitHandler<FieldValues>
+  ) => (e?: React.BaseSyntheticEvent) => void;
   submitText?: string;
   title: string;
   isLoading?: boolean;
@@ -31,6 +35,7 @@ const FormModal: FC<FormModalProps> = ({
   inputSize = "sm",
   isAddDialogOpen,
   setIsAddDialogOpen,
+  handleSubmit,
   formSubmitHandler,
   submitText = "Submit",
   isLoading = false,
@@ -38,7 +43,7 @@ const FormModal: FC<FormModalProps> = ({
   return (
     <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
       <DialogContent className="sm:max-w-[500px]">
-        <form onSubmit={formSubmitHandler}>
+        <form onSubmit={handleSubmit(formSubmitHandler)}>
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
 

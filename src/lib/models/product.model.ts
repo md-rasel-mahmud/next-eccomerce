@@ -18,6 +18,10 @@ export interface IProduct extends Document {
   totalReviews: number;
 }
 
+export type ProductTypeWithId = IProduct & {
+  _id: string;
+};
+
 const PRODUCT_DEFAULT_VALUES: Partial<IProduct> = {
   name: "",
   slug: "",

@@ -1,3 +1,4 @@
+import { buildQueryOptions } from "@/helpers/query-builder";
 import {
   parseMongooseDuplicateKeyError,
   validateRequest,
@@ -5,25 +6,53 @@ import {
 import { connectDB } from "@/lib/db";
 import { Product, productValidation } from "@/lib/models/product.model";
 import { NextRequest, NextResponse } from "next/server";
+import type { SortOrder } from "mongoose";
 
 // GET - get all products
-export async function GET() {
-  await connectDB();
+export async function GET(req: NextRequest) {
+  try {
+    await connectDB();
 
-  const data = await Product.find()
-    .populate("categoryId", "name")
-    .sort({ createdAt: -1 });
+    const { searchParams } = new URL(req.url!);
+    const query = Object.fromEntries(searchParams.entries());
 
-  const response = {
-    status: 200,
-    message: "Products fetched successfully",
-    data: data,
-  };
+    const { filter, pagination, sort } = buildQueryOptions(query);
 
-  return NextResponse.json(response, {
-    status: response.status,
-    statusText: response.message,
-  });
+    const products = await Product.find(filter)
+      .sort(sort as Record<string, SortOrder>)
+      .skip(pagination.skip)
+      .limit(pagination.limit);
+
+    const total = await Product.countDocuments(filter);
+
+    const response = {
+      status: 200,
+      message: "Products fetched successfully",
+      pagination: {
+        page: pagination.page,
+        limit: pagination.limit,
+        sortBy: pagination.sortBy,
+        sortOrder: pagination.sortOrder,
+        totalPages: Math.ceil(total / pagination.limit),
+        totalItems: total,
+      },
+      data: products,
+    };
+
+    return NextResponse.json(response, {
+      status: response.status,
+      statusText: response.message,
+    });
+  } catch (error) {
+    console.error("Product Fetch Error:", error);
+    return NextResponse.json(
+      {
+        status: 500,
+        message: "Failed to fetch products",
+      },
+      { status: 500 }
+    );
+  }
 }
 
 // POST - create a new product
