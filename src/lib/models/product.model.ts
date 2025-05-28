@@ -84,10 +84,7 @@ const productValidation = z.object({
       invalid_type_error: "Discount must be a number",
     })
     .min(0, "Discount must be a positive number"),
-  images: z
-    .array(z.string().url("Image URL must be a valid URL"))
-    .optional()
-    .default([]),
+  images: z.array(z.string()).optional().default([]),
   categoryId: z.string().min(1, "Category ID is required"),
   tags: z.array(z.string()).optional(),
   badge: z.string().optional(),

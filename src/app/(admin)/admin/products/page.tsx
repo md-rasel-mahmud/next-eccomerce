@@ -27,7 +27,7 @@ import useSWR, { mutate } from "swr";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ReusableTable } from "@/components/common/table/ReusableTable";
 import { useSearchParams } from "next/navigation";
-import React from "react";
+import AvatarGroup from "@/components/common/AvatarGroup";
 
 const AdminProducts: React.FC = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -183,6 +183,14 @@ const AdminProducts: React.FC = () => {
       required: true,
     },
     {
+      name: "images",
+      label: "Image",
+      type: "media",
+      placeholder: "Upload product image",
+      required: true,
+      isMultiple: true,
+    },
+    {
       name: "slug",
       label: "Slug",
       type: "text",
@@ -259,6 +267,19 @@ const AdminProducts: React.FC = () => {
       <ReusableTable<ProductTypeWithId>
         data={productList?.data || []}
         columns={[
+          {
+            header: "Images",
+            accessor: (row) => (
+              <div className="flex space-x-2">
+                <AvatarGroup
+                  data={row.images.map((image) => ({
+                    name: row.name,
+                    image: image || "",
+                  }))}
+                />
+              </div>
+            ),
+          },
           { header: "Name", accessor: "name" },
           {
             header: "Price",

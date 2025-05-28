@@ -1,4 +1,6 @@
 import FormInputWrapper from "@/components/common/form/FormInputWrapper";
+import MediaModal from "@/components/common/MediaModal";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -13,9 +15,10 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@radix-ui/react-checkbox";
-import { Camera, CroissantIcon } from "lucide-react";
+import { Camera, RefreshCw, X } from "lucide-react";
 import Image from "next/image";
-import { Control, Controller, FieldValues } from "react-hook-form";
+import { useState } from "react";
+import { Control, Controller, FieldValues, useWatch } from "react-hook-form";
 
 // types.ts
 export type InputType =
@@ -32,7 +35,8 @@ export type InputType =
   | "file"
   | "single-checkbox"
   | "multiple-checkbox"
-  | "switch";
+  | "switch"
+  | "media";
 
 export type OptionType = {
   label: string;
@@ -59,6 +63,7 @@ export interface FormInputConfig<Name extends string = string> {
   visible?: boolean;
   size?: "sm" | "md" | "lg";
   accept?: string; // for file input
+  isMultiple?: boolean; // for file input
 }
 
 interface FormInputProps {
@@ -68,6 +73,29 @@ interface FormInputProps {
 }
 
 export const FormInput = ({ formData, control }: FormInputProps) => {
+  const [mediaModalOpenFor, setMediaModalOpenFor] = useState<{
+    name: string;
+    value?: string;
+  } | null>(null);
+
+  const watch = useWatch({
+    control,
+  });
+
+  // Function to handle media selection
+  const handleMediaSelect = (
+    url: string | string[],
+    fieldOnChange: (url: string | string[]) => void,
+    value: string | string[] | null,
+    isMultiple: boolean = false
+  ) => {
+    fieldOnChange(url);
+
+    if (!isMultiple) {
+      setMediaModalOpenFor(null); // close modal
+    }
+  };
+
   const commonInputTypes = ["text", "email", "number", "date", "url"];
 
   return formData.reduce((acc: React.ReactNode[], input, index) => {
@@ -324,48 +352,103 @@ export const FormInput = ({ formData, control }: FormInputProps) => {
       );
     }
 
-    if (input.type === "file" && visible) {
+    if (input.type === "media" && visible) {
       acc.push(
         <Controller
           key={index}
           name={input.name}
           control={control}
-          defaultValue={null}
           render={({ field, fieldState }) => {
-            const file = field.value?.[0];
             return (
               <FormInputWrapper
                 {...input}
                 errorMessage={fieldState?.error?.message}
               >
-                <input
-                  type="file"
-                  className="hidden"
-                  accept={input?.accept}
-                  id={input.name}
-                  onChange={(e) => field.onChange(e.target.files)}
-                />
-                <Label htmlFor={input.name} className="cursor-pointer">
-                  {file ? (
-                    <Image
-                      src={URL.createObjectURL(file)}
-                      alt="preview"
-                      className="w-8 h-8 object-cover rounded"
-                    />
+                <div className="flex items-center justify-between space-x-4 bg-gray-100 p-1 rounded">
+                  {field?.value && field?.value?.length > 0 ? (
+                    input.isMultiple && Array.isArray(field.value) ? (
+                      <div className="flex items-center gap-1 overflow-x-auto">
+                        {field.value.map((url: string, i: number) => (
+                          <Image
+                            key={i}
+                            src={url || "/placeholder.svg"}
+                            alt="selected media"
+                            className="w-9 h-9 object-cover rounded"
+                            width={80}
+                            height={80}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <Image
+                        src={field.value || "/placeholder.svg"}
+                        alt="selected media"
+                        className="w-9 h-9 object-cover rounded"
+                        width={80}
+                        height={80}
+                      />
+                    )
                   ) : (
-                    <div className="w-8 h-8 flex items-center justify-center border-2 border-dashed rounded">
-                      <Camera className="text-lg" />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMediaModalOpenFor({
+                          name: input.name,
+                          value: field?.value,
+                        })
+                      }
+                      className="w-full h-9 border-2 border-dashed flex items-center gap-2 cursor-pointer hover:bg-gray-200 justify-center rounded"
+                    >
+                      <Camera className="text-gray-400" size={18} /> Select
+                      Media
+                    </button>
+                  )}
+
+                  {field?.value && field?.value?.length > 0 && (
+                    <div className="flex gap-1">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() =>
+                          setMediaModalOpenFor({
+                            name: input.name,
+                            value: field.value,
+                          })
+                        }
+                        className="btn btn-primary"
+                      >
+                        <RefreshCw size={5} />
+                      </Button>
+
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="destructive"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          field.onChange(null);
+                        }}
+                      >
+                        <X size={5} />
+                      </Button>
                     </div>
                   )}
-                </Label>
-                {file && (
-                  <button
-                    type="button"
-                    className="absolute top-2/3 right-0 transform -translate-y-1/2 btn btn-xs btn-circle bg-red-500 text-white"
-                    onClick={() => field.onChange(null)}
-                  >
-                    <CroissantIcon />
-                  </button>
+                </div>
+
+                {mediaModalOpenFor?.name === input.name && (
+                  <MediaModal
+                    onClose={() => setMediaModalOpenFor(null)}
+                    value={watch[input.name]}
+                    isMultiple={input.isMultiple}
+                    onSelect={(url) =>
+                      handleMediaSelect(
+                        url,
+                        field.onChange,
+                        watch[input.name],
+                        input.isMultiple
+                      )
+                    }
+                  />
                 )}
               </FormInputWrapper>
             );

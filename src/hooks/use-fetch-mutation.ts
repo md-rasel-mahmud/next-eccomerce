@@ -57,9 +57,6 @@ export function useFetchMutation<T>() {
       setIsError(true);
       setError(err);
     } finally {
-      setError(null);
-      setIsSuccess(false);
-      setIsError(false);
       setIsLoading(false);
     }
   };

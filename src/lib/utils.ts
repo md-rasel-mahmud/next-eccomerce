@@ -25,3 +25,85 @@ export function setQueryStringBySearchParams(
   });
   return params.toString();
 }
+
+export const compressImage = async (
+  file: File,
+  maxSizeKB = 100
+): Promise<Blob> => {
+  const img = new Image();
+  const reader = new FileReader();
+
+  return new Promise((resolve, reject) => {
+    reader.onload = (event) => {
+      if (!event.target?.result) return reject("No file content");
+
+      img.onload = async () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        // Initial dimensions
+        let width = img.width;
+        let height = img.height;
+        canvas.width = width;
+        canvas.height = height;
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        let quality = 0.9;
+        let blob: Blob | null = await new Promise((res) =>
+          canvas.toBlob(res, "image/jpeg", quality)
+        );
+
+        while (blob && blob.size > maxSizeKB * 1024 && quality > 0.1) {
+          quality -= 0.05;
+          blob = await new Promise((res) =>
+            canvas.toBlob(res, "image/jpeg", quality)
+          );
+        }
+
+        // If still too large, resize dimensions
+        while (
+          blob &&
+          blob.size > maxSizeKB * 1024 &&
+          width > 100 &&
+          height > 100
+        ) {
+          width *= 0.9;
+          height *= 0.9;
+          canvas.width = width;
+          canvas.height = height;
+          ctx?.drawImage(img, 0, 0, width, height);
+          blob = await new Promise((res) =>
+            canvas.toBlob(res, "image/jpeg", quality)
+          );
+        }
+
+        if (blob && blob.size <= maxSizeKB * 1024) {
+          resolve(blob);
+        } else {
+          reject("Could not compress below 100KB");
+        }
+      };
+
+      img.onerror = () => reject("Image load error");
+      img.src = event.target.result as string;
+    };
+
+    reader.onerror = () => reject("File read error");
+    reader.readAsDataURL(file);
+  });
+};
+
+export const compressImageToFile = async (
+  file: File,
+  title: string,
+  maxSizeKB = 100
+): Promise<File> => {
+  const blob = await compressImage(file, maxSizeKB);
+  const safeTitle = title
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9\-]/g, "");
+  const ext = "jpg"; // Since compression is in JPEG
+  const fileName = `${safeTitle}-${Date.now()}.${ext}`;
+  return new File([blob], fileName, { type: "image/jpeg" });
+};
