@@ -29,6 +29,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { Switch } from "@/components/ui/switch";
 
 const ProductsPage: React.FC = () => {
   const searchParams = useSearchParams();
@@ -127,6 +128,7 @@ const ProductsPage: React.FC = () => {
                 <h3 className="font-display text-xl font-medium mb-4">
                   Categories
                 </h3>
+
                 <div className="space-y-2">
                   {categoryListLoading ? (
                     Array.from({ length: 5 }).map((_, index) => (
@@ -166,6 +168,71 @@ const ProductsPage: React.FC = () => {
                       )}
                     </RadioGroup>
                   )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="font-display text-xl font-medium mb-4">Badge</h3>
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="isFeatured"
+                    checked={searchParams.get("isFeatured") === "true"}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSortBy("isFeatured");
+
+                        const query = setQueryStringBySearchParams(
+                          searchParams,
+                          {
+                            isFeatured: "true",
+                          }
+                        );
+                        router.push(`${pathname}?${query}`);
+                      } else {
+                        setSortBy("");
+                        const query = setQueryStringBySearchParams(
+                          searchParams,
+                          {
+                            isFeatured: "",
+                          }
+                        );
+                        router.push(`${pathname}?${query}`);
+                      }
+                    }}
+                  />
+                  <Label htmlFor="isFeatured">Featured</Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="isSeasonal"
+                    checked={searchParams.get("isSeasonal") === "true"}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSortBy("isSeasonal");
+
+                        const query = setQueryStringBySearchParams(
+                          searchParams,
+                          {
+                            isSeasonal: "true",
+                          }
+                        );
+                        router.push(`${pathname}?${query}`);
+                      } else {
+                        setSortBy("");
+                        const query = setQueryStringBySearchParams(
+                          searchParams,
+                          {
+                            isSeasonal: "",
+                          }
+                        );
+
+                        router.push(`${pathname}?${query}`);
+                      }
+                    }}
+                  />
+                  <Label htmlFor="isSeasonal">Seasonal</Label>
                 </div>
               </div>
 

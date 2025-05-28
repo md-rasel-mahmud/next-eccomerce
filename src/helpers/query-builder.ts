@@ -114,7 +114,7 @@ export function buildQueryOptions(query: QueryParams) {
     "minPrice",
     "maxPrice",
     "inStock",
-    "category", // ignore from general filters
+    "category",
   ];
   const filterQuery: Record<string, unknown> = {};
 
@@ -133,6 +133,18 @@ export function buildQueryOptions(query: QueryParams) {
       }
     }
   });
+
+  if (filterQuery.isFeatured && filterQuery.isFeatured === "true") {
+    filterQuery.isFeatured = true;
+  } else {
+    delete filterQuery.isFeatured;
+  }
+
+  if (filterQuery.isSeasonal && filterQuery.isSeasonal === "true") {
+    filterQuery.isSeasonal = true;
+  } else {
+    delete filterQuery.isSeasonal;
+  }
 
   // Price Range
   if (minPrice || maxPrice) {

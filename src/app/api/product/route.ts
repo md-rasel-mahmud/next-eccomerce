@@ -94,9 +94,11 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    pipeline.push({ $sort: sort });
+    if (Object.keys(sort).length > 1) {
+      pipeline.push({ $sort: sort });
+    }
+
     pipeline.push({ $skip: pagination.skip });
-    pipeline.push({ $limit: pagination.limit });
 
     const products = await Product.aggregate(pipeline);
 
@@ -107,6 +109,7 @@ export async function GET(req: NextRequest) {
           !("$skip" in stage) && !("$limit" in stage) && !("$sort" in stage)
       ),
     ];
+
     countPipeline.push({ $count: "total" });
 
     const countResult = await Product.aggregate(countPipeline);
