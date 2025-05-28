@@ -4,28 +4,115 @@ import {
   validateRequest,
 } from "@/helpers/validation-request";
 import { connectDB } from "@/lib/db";
-import { Product, productValidation } from "@/lib/models/product.model";
+import { productValidation } from "@/lib/models/product/product.dto";
+import { Product } from "@/lib/models/product/product.model";
 import { NextRequest, NextResponse } from "next/server";
-import type { SortOrder } from "mongoose";
 
 // GET - get all products
+// export async function GET(req: NextRequest) {
+//   try {
+//     await connectDB();
+
+//     const { searchParams } = new URL(req.url!);
+//     const query = Object.fromEntries(searchParams.entries());
+
+//     const { filter, pagination, sort } = buildQueryOptions(query);
+
+//     const products = await Product.find(filter)
+//       .sort(sort as Record<string, SortOrder>)
+//       .skip(pagination.skip)
+//       .limit(pagination.limit)
+//       .populate("category", "name slug");
+
+//     const total = await Product.countDocuments(filter);
+
+//     const response = {
+//       status: 200,
+//       message: "Products fetched successfully",
+//       pagination: {
+//         page: pagination.page,
+//         limit: pagination.limit,
+//         sortBy: pagination.sortBy,
+//         sortOrder: pagination.sortOrder,
+//         totalPages: Math.ceil(total / pagination.limit),
+//         totalItems: total,
+//       },
+//       data: products,
+//     };
+
+//     return NextResponse.json(response, {
+//       status: response.status,
+//       statusText: response.message,
+//     });
+//   } catch (error) {
+//     console.error("Product Fetch Error:", error);
+//     return NextResponse.json(
+//       {
+//         status: 500,
+//         message: "Failed to fetch products",
+//       },
+//       { status: 500 }
+//     );
+//   }
+// }
+
 export async function GET(req: NextRequest) {
   try {
     await connectDB();
 
-    const { searchParams } = new URL(req.url!);
+    const { searchParams } = new URL(req.url);
     const query = Object.fromEntries(searchParams.entries());
 
-    const { filter, pagination, sort } = buildQueryOptions(query);
+    const { filter, pagination, sort, categorySlug } = buildQueryOptions(query);
 
-    const products = await Product.find(filter)
-      .sort(sort as Record<string, SortOrder>)
-      .skip(pagination.skip)
-      .limit(pagination.limit);
+    // Start aggregation pipeline
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pipeline: any[] = [
+      {
+        $lookup: {
+          from: "categories",
+          localField: "category",
+          foreignField: "_id",
+          as: "category",
+        },
+      },
+      { $unwind: "$category" },
+    ];
 
-    const total = await Product.countDocuments(filter);
+    // If categorySlug is provided, add match stage for category slug + other filters
+    if (categorySlug) {
+      pipeline.push({
+        $match: {
+          ...filter,
+          "category.slug": categorySlug,
+        },
+      });
+    } else {
+      // No categorySlug filter, just apply other filters if any
+      if (Object.keys(filter).length > 0) {
+        pipeline.push({ $match: filter });
+      }
+    }
 
-    const response = {
+    pipeline.push({ $sort: sort });
+    pipeline.push({ $skip: pagination.skip });
+    pipeline.push({ $limit: pagination.limit });
+
+    const products = await Product.aggregate(pipeline);
+
+    // For total count, do a similar pipeline without skip, limit, sort
+    const countPipeline = [
+      ...pipeline.filter(
+        (stage) =>
+          !("$skip" in stage) && !("$limit" in stage) && !("$sort" in stage)
+      ),
+    ];
+    countPipeline.push({ $count: "total" });
+
+    const countResult = await Product.aggregate(countPipeline);
+    const total = countResult.length > 0 ? countResult[0].total : 0;
+
+    return NextResponse.json({
       status: 200,
       message: "Products fetched successfully",
       pagination: {
@@ -37,11 +124,6 @@ export async function GET(req: NextRequest) {
         totalItems: total,
       },
       data: products,
-    };
-
-    return NextResponse.json(response, {
-      status: response.status,
-      statusText: response.message,
     });
   } catch (error) {
     console.error("Product Fetch Error:", error);

@@ -9,7 +9,7 @@ const AvatarGroup: FC<{
 }> = ({ data }) => {
   return (
     <div className="flex -space-x-4">
-      {data?.map((user, index) => (
+      {data?.slice(0, data.length > 5 ? 5 : data.length)?.map((user, index) => (
         <Avatar key={index} className="border-2 border-white dark:border-black">
           <AvatarImage
             className="object-cover object-top"
@@ -22,9 +22,9 @@ const AvatarGroup: FC<{
         </Avatar>
       ))}
 
-      {data && data.length > 3 && (
+      {data && data.length > 5 && (
         <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium bg-muted text-muted-foreground border-2 border-white dark:border-black z-10">
-          +{data.length - 3}
+          +{data.length - 5}
         </div>
       )}
     </div>

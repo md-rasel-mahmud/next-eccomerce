@@ -15,7 +15,7 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { state, dispatch } = useStore();
-  const isInCart = state.cart.some((item) => item.productId === product.id);
+  const isInCart = state.cart.some((item) => item.productId === product._id);
 
   const handleAddToCart = () => {
     dispatch({ type: "ADD_TO_CART", product });
@@ -33,7 +33,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       <Link href={`/product/${product.slug}`} className="block overflow-hidden">
         <div className="aspect-square overflow-hidden bg-organic-50 relative">
           <Image
-            src={product.images[0]}
+            src={product.images[0] || "/placeholder.png"}
             alt={product.name}
             className="object-cover w-full h-full transition-transform group-hover:scale-105 duration-500"
             height={300}
@@ -42,17 +42,17 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
           {/* Product badges */}
           <div className="absolute top-2 left-2 flex flex-col gap-1">
-            {product.seasonal && (
-              <Badge className="bg-earth-500 hover:bg-earth-500">
+            {product.isSeasonal && (
+              <Badge className="bg-earth-500 hover:bg-earth-500 shadow">
                 Seasonal
               </Badge>
             )}
-            {product.salePrice && (
+            {!!product.badge && (
               <Badge className="bg-organic-500 hover:bg-organic-600">
-                Sale
+                {product?.badge}
               </Badge>
             )}
-            {!product.inStock && (
+            {product.stockQuantity === 0 && (
               <Badge variant="destructive">Out of Stock</Badge>
             )}
           </div>
@@ -62,8 +62,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       <CardContent className="p-4">
         <div className="mb-1 flex justify-between items-center">
           <span className="text-sm font-medium text-muted-foreground">
-            {product.category}
+            {typeof product.category === "object" && product.category.name}
           </span>
+
           {product.rating && (
             <div className="flex items-center">
               <Star className="h-3 w-3 fill-yellow-500 text-yellow-500 mr-1" />
@@ -103,7 +104,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               ? "bg-green-50 text-green-700 hover:bg-green-100 border border-green-200"
               : "bg-organic-500 hover:bg-organic-600 text-white"
           }`}
-          disabled={!product.inStock}
+          disabled={product.stockQuantity === 0}
           onClick={handleAddToCart}
         >
           {isInCart ? (
@@ -114,7 +115,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           ) : (
             <>
               <ShoppingCart className="h-4 w-4" />
-              {product.inStock ? "Add to Cart" : "Out of Stock"}
+              {product.stockQuantity !== 0 ? "Add to Cart" : "Out of Stock"}
             </>
           )}
         </Button>

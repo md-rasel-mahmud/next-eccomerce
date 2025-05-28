@@ -18,6 +18,7 @@ axiosRequest.interceptors.response.use(
     }
     return response;
   },
+
   (error) => {
     const method = error.config?.method;
 

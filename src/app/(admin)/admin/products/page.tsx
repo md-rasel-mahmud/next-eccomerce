@@ -10,16 +10,9 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { products as initialProducts } from "@/data/products";
 import { FormInputConfig } from "@/components/common/form/FormInput";
 import { useForm, FieldValues } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  IProduct,
-  PRODUCT_DEFAULT_VALUES,
-  ProductTypeWithId,
-  productValidation,
-} from "@/lib/models/product.model";
 import FormModal from "@/components/common/form/FormModal";
 import { useFetchMutation } from "@/hooks/use-fetch-mutation";
 import axiosRequest from "@/lib/axios";
@@ -28,6 +21,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ReusableTable } from "@/components/common/table/ReusableTable";
 import { useSearchParams } from "next/navigation";
 import AvatarGroup from "@/components/common/AvatarGroup";
+import { convertDataToObjectByKey } from "@/lib/utils";
+import {
+  IProduct,
+  PRODUCT_DEFAULT_VALUES,
+  ProductTypeWithId,
+  productValidation,
+} from "@/lib/models/product/product.dto";
 
 const AdminProducts: React.FC = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -50,10 +50,23 @@ const AdminProducts: React.FC = () => {
     `/product?${searchParams.toString()}`,
     (url) => axiosRequest.get(url).then((res) => res.data),
     {
-      fallbackData: initialProducts,
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
     }
+  );
+
+  const { data: categoryOptions, isLoading: categoryOptionsLoading } = useSWR(
+    `/category/options`,
+    (url) => axiosRequest.get(url).then((res) => res.data),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
+  );
+
+  const categoryObjectById = convertDataToObjectByKey(
+    categoryOptions?.data || [],
+    "value"
   );
 
   const { control, handleSubmit, setError, reset } = useForm<FieldValues>({
@@ -73,7 +86,7 @@ const AdminProducts: React.FC = () => {
 
         mutate(
           `/product?${searchParams.toString()}`,
-          (prevData?: { data: IProduct[] }) => {
+          (prevData?: { data: ProductTypeWithId[] }) => {
             // Filter out the deleted product
             const updatedProducts = prevData?.data.filter(
               (product) => product._id !== crudModalState?.productId
@@ -118,7 +131,8 @@ const AdminProducts: React.FC = () => {
 
           mutate(
             `/product?${searchParams.toString()}`,
-            (prevData?: { data: IProduct[] }) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (prevData?: { data: any[] }) => {
               // Update the local data with the updated product
 
               const cloneProducts = [...(prevData?.data || [])];
@@ -130,6 +144,12 @@ const AdminProducts: React.FC = () => {
               if (productIndex !== undefined && productIndex >= 0) {
                 cloneProducts[productIndex] = formData as IProduct;
                 cloneProducts[productIndex]._id = crudModalState.productId;
+                cloneProducts[productIndex].category = {
+                  name: categoryObjectById[formData.category]?.label || "",
+                  slug: categoryObjectById[formData.category]?.slug || "",
+                  _id: categoryObjectById[formData.category]?.value || "",
+                  image: categoryObjectById[formData.category]?.image || "",
+                };
               }
 
               // Sort by createdAt in descending order
@@ -154,9 +174,21 @@ const AdminProducts: React.FC = () => {
 
           mutate(
             `/product?${searchParams.toString()}`,
-            (prevData?: { data: IProduct[] }) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (prevData?: { data: any[] }) => {
               // Update the local data with the new product
-              const data = [formData as IProduct, ...(prevData?.data || [])];
+
+              const createdProduct = {
+                ...formData,
+                category: {
+                  name: categoryObjectById[formData.category]?.label || "",
+                  slug: categoryObjectById[formData.category]?.slug || "",
+                  _id: categoryObjectById[formData.category]?.value || "",
+                  image: categoryObjectById[formData.category]?.image || "",
+                },
+              };
+
+              const data = [createdProduct, ...(prevData?.data || [])];
 
               // Sort by createdAt in descending order
               return {
@@ -219,17 +251,13 @@ const AdminProducts: React.FC = () => {
       className: "md:col-span-2",
     },
     {
-      name: "categoryId",
+      name: "category",
       label: "Category",
       type: "select",
       required: true,
       className: "md:col-span-2",
-      options: [
-        { value: "electronics", label: "Electronics" },
-        { value: "clothing", label: "Clothing" },
-        { value: "home-appliances", label: "Home Appliances" },
-        { value: "books", label: "Books" },
-      ],
+      options: categoryOptions?.data || [],
+      disabled: categoryOptionsLoading,
     },
     {
       name: "isFeatured",
@@ -285,7 +313,13 @@ const AdminProducts: React.FC = () => {
             header: "Price",
             accessor: (row) => `BDT: ${row.price.toFixed(2)}`,
           },
-          { header: "Category", accessor: "categoryId" },
+          {
+            header: "Category",
+            accessor: (row) =>
+              typeof row.category === "object" && row.category !== null
+                ? row.category.name
+                : row.category,
+          },
           { header: "Stock", accessor: "stockQuantity" },
           {
             header: "Status",
@@ -303,14 +337,16 @@ const AdminProducts: React.FC = () => {
         ]}
         pagination={productList?.pagination}
         onEdit={(cell) => {
-          reset(cell);
-          setCrudModalState({
-            title: "Edit Product",
-            submitText: "Update Product",
-            isUpdate: true,
-            productId: String(cell._id),
-          });
-          setIsAddDialogOpen(true);
+          if (typeof cell.category === "object") {
+            reset({ ...cell, category: cell.category?._id || cell.category });
+            setCrudModalState({
+              title: "Edit Product",
+              submitText: "Update Product",
+              isUpdate: true,
+              productId: String(cell._id),
+            });
+            setIsAddDialogOpen(true);
+          }
         }}
         onDelete={(cell) => {
           setCrudModalState((prev) => ({

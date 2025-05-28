@@ -19,6 +19,7 @@ import { Camera, RefreshCw, X } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { Control, Controller, FieldValues, useWatch } from "react-hook-form";
+import TooltipSlider from "rc-slider";
 
 // types.ts
 export type InputType =
@@ -36,7 +37,8 @@ export type InputType =
   | "single-checkbox"
   | "multiple-checkbox"
   | "switch"
-  | "media";
+  | "media"
+  | "two-way-range";
 
 export type OptionType = {
   label: string;
@@ -64,6 +66,8 @@ export interface FormInputConfig<Name extends string = string> {
   size?: "sm" | "md" | "lg";
   accept?: string; // for file input
   isMultiple?: boolean; // for file input
+  min?: number; // for range inputs
+  max?: number; // for range inputs
 }
 
 interface FormInputProps {
@@ -299,29 +303,37 @@ export const FormInput = ({ formData, control }: FormInputProps) => {
       );
     }
 
-    // if (input.type === "two-way-range" && visible) {
-    //   acc.push(
-    //     <Controller
-    //       key={index}
-    //       name={input.name}
-    //       control={control}
-    //       render={({ field, fieldState }) => (
-    //         <FormInputWrapper
-    //           {...input}
-    //           errorMessage={fieldState?.error?.message}
-    //         >
-    //           <TooltipSlider
-    //             range
-    //             min={input.min || 0}
-    //             max={input.max || 100}
-    //             value={field.value}
-    //             onChange={field.onChange}
-    //           />
-    //         </FormInputWrapper>
-    //       )}
-    //     />
-    //   );
-    // }
+    if (input.type === "two-way-range" && visible) {
+      acc.push(
+        <Controller
+          key={index}
+          name={input.name}
+          control={control}
+          render={({ field, fieldState }) => (
+            <FormInputWrapper
+              {...input}
+              errorMessage={fieldState?.error?.message}
+            >
+              <TooltipSlider
+                range
+                min={input.min || 0}
+                max={input.max || 100}
+                value={field.value}
+                onChange={field.onChange}
+                styles={{
+                  rail: {
+                    background: `#4A7C59`,
+                  },
+                  track: {
+                    background: "#31523c",
+                  },
+                }}
+              />
+            </FormInputWrapper>
+          )}
+        />
+      );
+    }
 
     if (input.type === "select" && visible) {
       acc.push(

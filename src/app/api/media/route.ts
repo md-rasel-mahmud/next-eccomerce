@@ -29,7 +29,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json(media, { status: 201 });
   } catch (err) {
-    console.log("err :>> ", err);
     return NextResponse.json(
       { error: "Upload failed", details: err },
       { status: 500 }

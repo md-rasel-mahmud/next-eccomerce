@@ -1,9 +1,9 @@
 "use client";
 import React, { ReactNode } from "react";
-import { LayoutDashboard, Package, PackageCheck, List } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { adminSidebarMenu } from "@/constants/admin-sidebar-menu";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -11,25 +11,6 @@ interface AdminLayoutProps {
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const pathname = usePathname();
-
-  const menuItems = [
-    {
-      title: "Dashboard",
-      path: "/admin",
-      icon: <LayoutDashboard className="mr-2 h-4 w-4" />,
-    },
-    {
-      title: "Products",
-      path: "/admin/products",
-      icon: <Package className="mr-2 h-4 w-4" />,
-    },
-    {
-      title: "Orders",
-      path: "/admin/orders",
-      icon: <PackageCheck className="mr-2 h-4 w-4" />,
-    },
-    { title: "Store", path: "/", icon: <List className="mr-2 h-4 w-4" /> },
-  ];
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -41,7 +22,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
         <nav className="p-4">
           <ul>
-            {menuItems.map((item) => (
+            {adminSidebarMenu.map((item) => (
               <li key={item.path} className="mb-2">
                 <Link
                   href={item.path}

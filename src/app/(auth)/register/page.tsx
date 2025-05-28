@@ -30,7 +30,7 @@ const RegisterPage = () => {
 
   const router = useRouter();
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
@@ -38,14 +38,12 @@ const RegisterPage = () => {
       return;
     }
 
-    const data = await mutateFn(
+    mutateFn(
       () => axiosRequest.post("/register", { name, phone, password }),
       () => {
         router.push("/login");
       }
     );
-
-    console.log("data", data);
   };
 
   return (

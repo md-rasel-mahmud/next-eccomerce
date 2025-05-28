@@ -21,17 +21,37 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/components/ui/use-toast";
 import Link from "next/link";
+import Image from "next/image";
 import { signOut, useSession } from "next-auth/react";
 import { Roles } from "@/enums/Roles.enum";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { dashboardItems } from "@/constants/nav-menu";
+import useSWR from "swr";
+import axiosRequest from "@/lib/axios";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
+} from "@/components/ui/navigation-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { state } = useStore();
-
   const { data } = useSession();
+
+  const { data: categoryList, isLoading: categoryListLoading } = useSWR(
+    `/category/options`,
+    (url) => axiosRequest.get(url).then((res) => res.data),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
+  );
 
   const user = data?.user;
   const isAdmin = user?.role === Roles.ADMIN;
@@ -72,15 +92,57 @@ const Navbar: React.FC = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-8">
-            {dashboardItems.map((item) => (
-              <Link
-                key={item.link}
-                href={item.link}
-                className="text-foreground hover:text-organic-500 font-medium"
-              >
-                {item.title}
-              </Link>
-            ))}
+            <NavigationMenu>
+              <NavigationMenuList>
+                {dashboardItems.map((item) => (
+                  <NavigationMenuItem key={item.link}>
+                    <Link
+                      href={item.link}
+                      className={
+                        navigationMenuTriggerStyle() + " bg-transparent"
+                      }
+                    >
+                      {item.title}
+                    </Link>
+                  </NavigationMenuItem>
+                ))}
+
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="bg-transparent">
+                    Categories
+                    {categoryListLoading && <Skeleton />}
+                  </NavigationMenuTrigger>
+
+                  <NavigationMenuContent>
+                    <ul className="grid gap-3 p-4 w-[300px] md:grid-cols-2">
+                      {categoryList?.data?.map(
+                        (category: {
+                          slug: string;
+                          label: string;
+                          image: string;
+                        }) => (
+                          <li key={category.slug}>
+                            <Link
+                              href={`/shop?category=${category.slug}`}
+                              className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-100 transition"
+                            >
+                              <Image
+                                src={category.image}
+                                alt={category.label}
+                                width={40}
+                                height={40}
+                                className="rounded-full object-cover"
+                              />
+                              <span>{category.label}</span>
+                            </Link>
+                          </li>
+                        )
+                      )}
+                    </ul>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
           </nav>
 
           {/* Desktop Action Buttons */}

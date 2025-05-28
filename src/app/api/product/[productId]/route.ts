@@ -1,6 +1,7 @@
 import { validateRequest } from "@/helpers/validation-request";
 import { connectDB } from "@/lib/db";
-import { Product, productValidation } from "@/lib/models/product.model";
+import { productValidation } from "@/lib/models/product/product.dto";
+import { Product } from "@/lib/models/product/product.model";
 import { NextRequest, NextResponse } from "next/server";
 
 // PATCH - update a product

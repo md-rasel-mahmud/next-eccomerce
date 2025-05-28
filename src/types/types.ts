@@ -1,4 +1,3 @@
-
 // User Model
 export interface User {
   id: string;
@@ -12,23 +11,31 @@ export interface User {
     zipCode: string;
     country: string;
   };
-  role: 'user' | 'admin';
+  role: "user" | "admin";
 }
 
 // Product Model
 export interface Product {
-  id: string;
+  _id: string;
   name: string;
   slug: string;
   description: string;
   price: number;
   salePrice?: number;
   images: string[];
-  category: string;
+  category:
+    | string
+    | {
+        name: string;
+        slug: string;
+        _id: string;
+        image?: string;
+        description?: string;
+      };
+  badge?: string;
   tags: string[];
-  featured: boolean;
-  seasonal: boolean;
-  inStock: boolean;
+  isFeatured: boolean;
+  isSeasonal: boolean;
   stockQuantity: number;
   rating?: number;
   reviews?: Review[];
@@ -72,8 +79,8 @@ export interface Order {
     country: string;
   };
   paymentMethod: string;
-  paymentStatus: 'pending' | 'paid' | 'failed';
-  orderStatus: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  paymentStatus: "pending" | "paid" | "failed";
+  orderStatus: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
   createdAt: string;
   updatedAt: string;
 }

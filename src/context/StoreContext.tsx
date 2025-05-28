@@ -54,7 +54,7 @@ const storeReducer = (state: StoreState, action: Action): StoreState => {
   switch (action.type) {
     case "ADD_TO_CART": {
       const existingItemIndex = state.cart.findIndex(
-        (item) => item.productId === action.product.id
+        (item) => item.productId === action.product._id
       );
 
       let updatedCart: CartItem[];
@@ -71,7 +71,7 @@ const storeReducer = (state: StoreState, action: Action): StoreState => {
         updatedCart = [
           ...state.cart,
           {
-            productId: action.product.id,
+            productId: action.product._id,
             product: action.product,
             quantity: action.quantity || 1,
           },

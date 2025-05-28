@@ -30,7 +30,7 @@ const ProductDetailsPage: FC<ProductDetailsPageProps> = ({
   const [activeImage, setActiveImage] = useState(0);
   const { state, dispatch } = useStore();
 
-  const isInCart = state.cart.some((item) => item.productId === product?.id);
+  const isInCart = state.cart.some((item) => item.productId === product?._id);
 
   if (!product) {
     return (
@@ -194,20 +194,20 @@ const ProductDetailsPage: FC<ProductDetailsPageProps> = ({
               <div className="flex items-center gap-2 mb-2">
                 <Truck className="h-5 w-5 text-organic-600" />
                 <span className="font-medium">
-                  {product.inStock
+                  {product.stockQuantity > 0
                     ? "Free delivery on orders over $50"
                     : "Out of stock"}
                 </span>
               </div>
 
-              {product.inStock && (
+              {product.stockQuantity > 0 && (
                 <p className="text-sm text-muted-foreground ml-7">
                   Usually ships within 1-2 business days
                 </p>
               )}
             </div>
 
-            {product.inStock ? (
+            {product.stockQuantity > 0 ? (
               <div className="space-y-6">
                 <div className="flex items-center">
                   <label htmlFor="quantity" className="mr-4 font-medium">
@@ -284,7 +284,7 @@ const ProductDetailsPage: FC<ProductDetailsPageProps> = ({
                   <span className="text-muted-foreground">Tags:</span>{" "}
                   {product.tags.join(", ")}
                 </li>
-                {product.seasonal && (
+                {product.isSeasonal && (
                   <li>
                     <span className="text-muted-foreground">Seasonal:</span> Yes
                   </li>

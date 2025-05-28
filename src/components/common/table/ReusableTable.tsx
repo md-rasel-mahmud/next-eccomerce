@@ -148,6 +148,16 @@ export function ReusableTable<T extends { _id: string }>({
                   )}
                 </TableRow>
               ))}
+
+          {data.length === 0 && !isLoading && (
+            <TableRow>
+              <TableCell colSpan={columns.length + (hasAction ? 1 : 0)}>
+                <div className="text-center text-gray-500 py-20">
+                  No data available
+                </div>
+              </TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
 

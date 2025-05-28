@@ -107,3 +107,45 @@ export const compressImageToFile = async (
   const fileName = `${safeTitle}-${Date.now()}.${ext}`;
   return new File([blob], fileName, { type: "image/jpeg" });
 };
+
+type DataItem = Record<string, unknown>;
+
+export function convertDataToObjectByKey<T extends DataItem>(
+  data: T[] | undefined,
+  keyName: keyof T,
+  fieldsKey?: (keyof T)[]
+): Record<string, Partial<T>> {
+  const object =
+    data?.reduce((acc: Record<string, Partial<T>>, curr: T) => {
+      if (fieldsKey && fieldsKey.length > 0) {
+        const field: Partial<T> = {};
+
+        fieldsKey.forEach((key) => {
+          field[key] = curr[key];
+        });
+
+        acc[String(curr[keyName])] = field;
+      } else {
+        acc[String(curr[keyName])] = curr;
+      }
+
+      return acc;
+    }, {}) || {};
+
+  return object;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function debounce<T extends (...args: any[]) => void>(
+  fn: T,
+  delay: number
+): (...args: Parameters<T>) => void {
+  let timeout: ReturnType<typeof setTimeout>;
+
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      fn(...args);
+    }, delay);
+  };
+}
