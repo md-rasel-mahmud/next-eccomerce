@@ -190,11 +190,11 @@ const OrderSuccessPage = () => {
           </div>
         </CardContent>
         <CardFooter className="flex flex-col md:flex-row gap-4 justify-between">
-          <Button variant="outline" onClick={() => router.push("/orders")}>
+          <Button variant="outline" onClick={() => router.push("/user/orders")}>
             View All Orders
           </Button>
           <Button
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/shop")}
             className="bg-organic-500 hover:bg-organic-600"
           >
             Continue Shopping

@@ -35,10 +35,15 @@ const LoginPage = () => {
       redirect: false,
     });
 
+    console.log("res", res);
+
     if (res?.error) {
+      console.log("res?.error", res?.error);
+
       setIsLoading(false);
-      toast.error("Success", {
-        description: "Login failed",
+      toast.error("Error", {
+        description:
+          typeof res?.error === "string" ? res.error : "Login failed",
       });
     } else {
       setIsLoading(false);

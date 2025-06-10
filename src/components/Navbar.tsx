@@ -142,6 +142,20 @@ const Navbar: React.FC = () => {
                     </ul>
                   </NavigationMenuContent>
                 </NavigationMenuItem>
+
+                {user?.role === Roles.ADMIN && (
+                  <NavigationMenuItem>
+                    <Link
+                      href="/admin"
+                      className={
+                        navigationMenuTriggerStyle() +
+                        " text-organic-600 font-medium"
+                      }
+                    >
+                      Admin Panel
+                    </Link>
+                  </NavigationMenuItem>
+                )}
               </NavigationMenuList>
             </NavigationMenu>
           </nav>
@@ -182,12 +196,15 @@ const Navbar: React.FC = () => {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link href="/profile" className="w-full cursor-pointer">
+                      <Link href="/user" className="w-full cursor-pointer">
                         Profile
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/orders" className="w-full cursor-pointer">
+                      <Link
+                        href="/user/orders"
+                        className="w-full cursor-pointer"
+                      >
                         Orders
                       </Link>
                     </DropdownMenuItem>

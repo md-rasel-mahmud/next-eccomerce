@@ -22,14 +22,46 @@ export async function GET(req: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const pipeline: any[] = [
       {
+        $unwind: "$items",
+      },
+      {
         $lookup: {
-          from: "categories",
-          localField: "category",
+          from: "products",
+          localField: "items.productId",
           foreignField: "_id",
-          as: "category",
+          as: "productInfo",
         },
       },
-      { $unwind: "$category" },
+      {
+        $unwind: {
+          path: "$productInfo",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $addFields: {
+          "items.productId": "$productInfo",
+        },
+      },
+      {
+        $group: {
+          _id: "$_id",
+          fullName: { $first: "$fullName" },
+          orderId: { $first: "$orderId" },
+          phone: { $first: "$phone" },
+          division: { $first: "$division" },
+          district: { $first: "$district" },
+          postalCode: { $first: "$postalCode" },
+          address: { $first: "$address" },
+          status: { $first: "$status" },
+          paymentMethod: { $first: "$paymentMethod" },
+          totalAmount: { $first: "$totalAmount" },
+          shippingCharge: { $first: "$shippingCharge" },
+          createdAt: { $first: "$createdAt" },
+          updatedAt: { $first: "$updatedAt" },
+          items: { $push: "$items" },
+        },
+      },
     ];
 
     // If categorySlug is provided, add match stage for category slug + other filters
