@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,60 +11,40 @@ import {
 } from "@/components/ui/card";
 import { CheckCircle } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import axiosRequest from "@/lib/axios";
+import useSWR from "swr";
+import { Product } from "@/types/types";
+import { getCurrencySymbol } from "@/lib/utils";
 
 const OrderSuccessPage = () => {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("id");
-  const [order, setOrder] = useState<{
-    id: string;
-    items: Array<{
-      product: { name: string; price: number };
-      quantity: number;
-    }>;
-    shippingInfo: {
-      fullName: string;
-      addressLine1: string;
-      addressLine2?: string;
-      city: string;
-      state: string;
-      postalCode: string;
-      country: string;
-      phoneNumber: string;
-    };
-    paymentMethod: string;
-    totalAmount: number;
-    status: string;
-    createdAt: string;
-  }>({
-    id: "",
-    items: [],
-    shippingInfo: {
-      fullName: "",
-      addressLine1: "",
-      addressLine2: "",
-      city: "",
-      state: "",
-      postalCode: "",
-      country: "",
-      phoneNumber: "",
-    },
-    paymentMethod: "",
-    totalAmount: 0,
-    status: "",
-    createdAt: "",
-  });
+
+  const { data: orderData, isLoading: orderLoading } = useSWR(
+    `/order/${orderId}`,
+    (url) => axiosRequest.get(url).then((res) => res.data),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
+  );
+
+  const order = orderData?.data || null;
+
   const router = useRouter();
 
-  useEffect(() => {
-    if (orderId) {
-      // Find the order in local storage
-      const orders = JSON.parse(localStorage.getItem("orders") || "[]");
-      const matchedOrder = orders.find((o: { id: string }) => o.id === orderId);
-      if (matchedOrder) {
-        setOrder(matchedOrder);
-      }
-    }
-  }, [orderId]);
+  if (orderLoading) {
+    return (
+      <div className="container py-16 text-center">
+        <h1 className="text-2xl md:text-3xl font-display font-semibold mb-4">
+          Loading...
+        </h1>
+        <p className="mb-6 text-muted-foreground">
+          Please wait while we fetch your order details.
+        </p>
+      </div>
+    );
+  }
 
   if (!order) {
     return (
@@ -101,7 +81,7 @@ const OrderSuccessPage = () => {
       <Card className="max-w-3xl mx-auto">
         <CardHeader>
           <CardTitle className="flex justify-between items-center">
-            <span>Order #{order.id}</span>
+            <span>Order #{order.orderId}</span>
             <span className="text-sm font-normal px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full">
               {order.status}
             </span>
@@ -118,51 +98,70 @@ const OrderSuccessPage = () => {
               {order.items.map(
                 (
                   item: {
-                    product: { name: string; price: number };
+                    productId: Product;
                     quantity: number;
                   },
                   index: number
-                ) => (
-                  <div
-                    key={index}
-                    className="flex justify-between items-center border-b pb-2"
-                  >
-                    <div className="flex items-center">
-                      <div className="ml-3">
-                        <div>{item.product.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          Qty: {item.quantity}
+                ) => {
+                  const product = item.productId as Product;
+
+                  return (
+                    <div
+                      key={index}
+                      className="flex justify-between items-center border-b pb-2"
+                    >
+                      <div className="flex items-center">
+                        <div className="ml-3">
+                          <div>{product?.name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            Qty: {item.quantity}
+                          </div>
                         </div>
                       </div>
+
+                      <p>
+                        {!!product?.discount && product.discount > 0 && (
+                          <span className="text-xs text-gray-500 line-through pr-2">
+                            {getCurrencySymbol("BDT") +
+                              " " +
+                              (product?.price * item?.quantity).toFixed(2)}
+                          </span>
+                        )}
+                        {getCurrencySymbol("BDT") +
+                          " " +
+                          (product?.price * item?.quantity).toFixed(2)}
+                      </p>
                     </div>
-                    <div>
-                      ${(item.product.price * item.quantity).toFixed(2)}
-                    </div>
-                  </div>
-                )
+                  );
+                }
               )}
             </div>
             <div className="flex justify-between items-center font-medium mt-4">
               <span>Total Amount</span>
-              <span>${order.totalAmount.toFixed(2)}</span>
+              <span>
+                {getCurrencySymbol("BDT") + " " + order.totalAmount.toFixed(2)}
+              </span>
             </div>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
             <div>
               <h3 className="font-semibold mb-2">Shipping Address</h3>
-              <div className="text-sm">
-                <p>{order.shippingInfo.fullName}</p>
-                <p>{order.shippingInfo.addressLine1}</p>
-                {order.shippingInfo.addressLine2 && (
-                  <p>{order.shippingInfo.addressLine2}</p>
-                )}
+              <div className="text-sm space-y-2">
+                <p>{order.fullName}</p>
+
+                <div className="space-y-1 my-2">
+                  <p>
+                    <span className="font-semibold">Address: </span>{" "}
+                    {order.address} - {order.postalCode},
+                  </p>
+                  <p>{order.district}, </p>
+                  <p>{order.division}</p>
+                </div>
+
                 <p>
-                  {order.shippingInfo.city}, {order.shippingInfo.state}{" "}
-                  {order.shippingInfo.postalCode}
+                  <span className="font-semibold">Phone:</span> {order.phone}
                 </p>
-                <p>{order.shippingInfo.country}</p>
-                <p>Phone: {order.shippingInfo.phoneNumber}</p>
               </div>
             </div>
 
@@ -171,11 +170,14 @@ const OrderSuccessPage = () => {
               <div className="text-sm">
                 <p>
                   <span className="font-medium">Payment Method:</span>{" "}
-                  {order.paymentMethod === "credit-card"
-                    ? "Credit/Debit Card"
-                    : order.paymentMethod === "bank-transfer"
-                    ? "Bank Transfer"
-                    : "Cash on Delivery"}
+                  <span className="text-organic-500 font-semibold">
+                    {" "}
+                    {order.paymentMethod === "credit-card"
+                      ? "Credit/Debit Card"
+                      : order.paymentMethod === "bank-transfer"
+                      ? "Bank Transfer"
+                      : "Cash on Delivery"}
+                  </span>
                 </p>
                 <p className="mt-1">
                   <span className="font-medium">Payment Status:</span>{" "}

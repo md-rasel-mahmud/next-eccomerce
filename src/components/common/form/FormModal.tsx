@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { FC } from "react";
 import { Control, FieldValues, SubmitHandler } from "react-hook-form";
 
@@ -26,6 +27,8 @@ type FormModalProps = {
   submitText?: string;
   title: string;
   isLoading?: boolean;
+  dialogContentClassName?: string;
+  inputParentClassName?: string;
 };
 
 const FormModal: FC<FormModalProps> = ({
@@ -39,10 +42,12 @@ const FormModal: FC<FormModalProps> = ({
   formSubmitHandler,
   submitText = "Submit",
   isLoading = false,
+  dialogContentClassName = "",
+  inputParentClassName = "",
 }) => {
   return (
     <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className={cn("sm:max-w-[500px]", dialogContentClassName)}>
         <form onSubmit={handleSubmit(formSubmitHandler)}>
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
@@ -53,7 +58,12 @@ const FormModal: FC<FormModalProps> = ({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 my-8">
+          <div
+            className={cn(
+              "grid grid-cols-1 lg:grid-cols-2 gap-4 my-8",
+              inputParentClassName
+            )}
+          >
             <FormInput
               {...{
                 control,

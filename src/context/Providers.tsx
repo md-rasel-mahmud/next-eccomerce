@@ -1,7 +1,6 @@
 "use client";
 
 import { ReactNode } from "react";
-import { StoreProvider } from "@/context/StoreContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Provider } from "react-redux";
@@ -26,7 +25,7 @@ export default function Providers({ children }: { children: ReactNode }) {
                 shouldRetryOnError: false,
               }}
             >
-              <StoreProvider>{children}</StoreProvider>
+              {children}
 
               <Toaster />
               <Sonner richColors />

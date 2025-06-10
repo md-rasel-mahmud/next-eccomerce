@@ -69,11 +69,12 @@ const AdminProducts: React.FC = () => {
     "value"
   );
 
-  const { control, handleSubmit, setError, reset } = useForm<FieldValues>({
-    defaultValues: PRODUCT_DEFAULT_VALUES,
-    resolver: zodResolver(productValidation),
-    mode: "all",
-  });
+  const { control, handleSubmit, setError, reset, watch, setValue } =
+    useForm<FieldValues>({
+      defaultValues: PRODUCT_DEFAULT_VALUES,
+      resolver: zodResolver(productValidation),
+      mode: "all",
+    });
 
   const { isLoading, mutateFn } = useFetchMutation();
 
@@ -118,6 +119,7 @@ const AdminProducts: React.FC = () => {
 
     if (formData._id) {
       delete body._id; // Remove _id if present to avoid conflicts
+      delete body.discountPercentage; // Remove discountPercentage as it's not needed in the request
     }
 
     // Handle form submission logic here
@@ -213,14 +215,13 @@ const AdminProducts: React.FC = () => {
       type: "text",
       placeholder: "Enter product name",
       required: true,
-    },
-    {
-      name: "images",
-      label: "Image",
-      type: "media",
-      placeholder: "Upload product image",
-      required: true,
-      isMultiple: true,
+      extraOnChange: (value) => {
+        const slug = value
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "");
+        setValue("slug", slug);
+      },
     },
     {
       name: "slug",
@@ -230,11 +231,54 @@ const AdminProducts: React.FC = () => {
       required: true,
     },
     {
+      name: "images",
+      label: "Image",
+      type: "media",
+      placeholder: "Upload product image",
+      required: true,
+      isMultiple: true,
+    },
+
+    {
       name: "price",
       label: "Price",
       type: "number",
       placeholder: "Enter product price",
       required: true,
+    },
+    {
+      name: "discount",
+      label: "Discount Amount",
+      type: "number",
+      placeholder: "Enter discount percentage",
+      required: false,
+      extraOnChange: (value) => {
+        const price = watch("price");
+
+        if (value > 0 && price > 0) {
+          const discountPercentage = ((price - value) / price) * 100;
+          setValue("discountPercentage", discountPercentage);
+        } else {
+          setValue("discountPercentage", 0);
+        }
+      },
+    },
+    {
+      name: "discountPercentage",
+      label: "Discount Percentage (%)",
+      type: "number",
+      placeholder: "Enter discount percentage",
+      required: false,
+      extraOnChange: (value) => {
+        const price = watch("price");
+
+        if (value > 0 && price > 0) {
+          const discountAmount = (price * value) / 100;
+          setValue("discount", price - discountAmount);
+        } else {
+          setValue("discount", 0);
+        }
+      },
     },
     {
       name: "stockQuantity",
@@ -244,21 +288,22 @@ const AdminProducts: React.FC = () => {
       required: true,
     },
     {
-      name: "description",
-      label: "Description",
-      type: "textarea",
-      placeholder: "Enter product description",
-      className: "md:col-span-2",
-    },
-    {
       name: "category",
       label: "Category",
       type: "select",
       required: true,
-      className: "md:col-span-2",
+      className: "md:col-span-2 lg:col-span-2",
       options: categoryOptions?.data || [],
       disabled: categoryOptionsLoading,
     },
+    {
+      name: "description",
+      label: "Description",
+      type: "textarea",
+      placeholder: "Enter product description",
+      className: "md:col-span-2 lg:col-span-3",
+    },
+
     {
       name: "isFeatured",
       label: "Featured Product",
@@ -372,6 +417,9 @@ const AdminProducts: React.FC = () => {
           handleSubmit,
           formSubmitHandler,
           submitText: crudModalState.submitText,
+          dialogContentClassName: "sm:max-w-[1000px]",
+          inputParentClassName:
+            "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4",
         }}
       />
 

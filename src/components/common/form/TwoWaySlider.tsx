@@ -19,7 +19,7 @@ type Props = {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const filterHandleProps = (props: any) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { prefixCls, ...rest } = props;
+  const { prefixCls, dragging, offset, value, index, ref, ...rest } = props;
   return rest;
 };
 

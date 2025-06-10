@@ -4,7 +4,6 @@ import "./globals.css";
 import Providers from "@/context/Providers";
 import NextTopLoader from "nextjs-toploader";
 import Layout from "@/components/Layout";
-import "rc-slider/assets/index.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

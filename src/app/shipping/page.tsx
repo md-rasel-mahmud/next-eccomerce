@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 const ShippingPage = () => {
   const [formData, setFormData] = useState({
@@ -35,6 +36,8 @@ const ShippingPage = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { data: session } = useSession();
+  const user = session?.user;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -84,8 +87,9 @@ const ShippingPage = () => {
                 <Input
                   id="fullName"
                   name="fullName"
-                  value={formData.fullName}
+                  value={user?.name}
                   onChange={handleChange}
+                  disabled
                   placeholder="Enter your full name"
                   required
                 />

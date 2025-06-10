@@ -22,6 +22,8 @@ export interface IProduct {
   stockQuantity: number;
   averageRating: number;
   totalReviews: number;
+  discountPercentage?: number;
+  tax: number;
 }
 
 export type ProductTypeWithId = IProduct & {
@@ -34,6 +36,7 @@ const PRODUCT_DEFAULT_VALUES: Partial<IProduct> = {
   description: "",
   price: 0,
   discount: 0,
+  discountPercentage: 0,
   images: [],
   category: "",
   tags: [],
@@ -53,7 +56,11 @@ const productValidation = z.object({
   slug: z
     .string()
     .min(1, "Slug is required")
-    .max(100, "Slug must be less than 100 characters"),
+    .max(100, "Slug must be less than 100 characters")
+    .regex(
+      /^[a-z0-9-]+$/,
+      "Slug must contain only lowercase letters, numbers, and hyphens"
+    ),
   description: z.string(),
   price: z
     .number({
@@ -67,6 +74,10 @@ const productValidation = z.object({
       invalid_type_error: "Discount must be a number",
     })
     .min(0, "Discount must be a positive number"),
+  discountPercentage: z
+    .number()
+    .min(0, "Discount percentage must be a positive number")
+    .max(100, "Discount percentage cannot exceed 100"),
   images: z.array(z.string()).optional().default([]),
   category: z.string().min(1, "Category is required"),
   tags: z.array(z.string()).optional(),

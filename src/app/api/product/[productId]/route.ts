@@ -4,6 +4,33 @@ import { productValidation } from "@/lib/models/product/product.dto";
 import { Product } from "@/lib/models/product/product.model";
 import { NextRequest, NextResponse } from "next/server";
 
+// GET - get a single product by ID
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { productId: string } }
+) {
+  await connectDB();
+
+  const slug = params.productId;
+
+  const data = await Product.findOne({ slug }).populate(
+    "category",
+    "name slug image"
+  );
+
+  if (!data) {
+    return NextResponse.json({ message: "Product not found" }, { status: 404 });
+  }
+
+  const response = {
+    status: 200,
+    message: "Product fetched successfully",
+    data,
+  };
+
+  return NextResponse.json(response);
+}
+
 // PATCH - update a product
 export async function PATCH(
   request: NextRequest,

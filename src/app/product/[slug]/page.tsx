@@ -2,7 +2,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/context/StoreContext";
-import { getProductBySlug } from "@/data/products";
+import axiosRequest from "@/lib/axios";
 import {
   ArrowLeft,
   Check,
@@ -10,11 +10,12 @@ import {
   Plus,
   ShoppingCart,
   Star,
-  Truck,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import React, { FC, useState } from "react";
+import useSWR from "swr";
 
 type ProductDetailsPageProps = {
   params: {
@@ -22,15 +23,33 @@ type ProductDetailsPageProps = {
   };
 };
 
-const ProductDetailsPage: FC<ProductDetailsPageProps> = ({
-  params: { slug },
-}) => {
-  const product = getProductBySlug(slug || "");
+const ProductDetailsPage: FC<ProductDetailsPageProps> = () => {
+  const { slug } = useParams();
+
+  // const product = getProductBySlug(slug || "");
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
   const { state, dispatch } = useStore();
 
-  const isInCart = state.cart.some((item) => item.productId === product?._id);
+  const { data: singleProduct, isLoading: productListLoading } = useSWR(
+    `/product/${slug}`,
+    (url) => axiosRequest.get(url).then((res) => res.data),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
+  );
+  const product = singleProduct?.data;
+
+  const isInCart = state.cart.some((item) => item.product === product?._id);
+
+  if (productListLoading) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <h1 className="text-2xl font-bold mb-4">Loading Product...</h1>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -105,7 +124,7 @@ const ProductDetailsPage: FC<ProductDetailsPageProps> = ({
 
             {product.images.length > 1 && (
               <div className="grid grid-cols-4 gap-2">
-                {product.images.map((image, idx) => (
+                {product.images.map((image: string, idx: number) => (
                   <div
                     key={idx}
                     className={`aspect-square rounded-md overflow-hidden cursor-pointer border-2 ${
@@ -131,9 +150,11 @@ const ProductDetailsPage: FC<ProductDetailsPageProps> = ({
           {/* Product Info */}
           <div>
             <div className="mb-2">
-              <Link href={`/categories/${product.category.toLowerCase()}`}>
+              <Link
+                href={`/shop?category=${product?.category?.slug?.toLowerCase()}`}
+              >
                 <Badge variant="outline" className="mb-2">
-                  {product.category}
+                  {product?.category?.name || "Uncategorized"}
                 </Badge>
               </Link>
             </div>
@@ -188,23 +209,6 @@ const ProductDetailsPage: FC<ProductDetailsPageProps> = ({
 
             <div className="prose prose-green max-w-none mb-6">
               <p>{product.description}</p>
-            </div>
-
-            <div className="mb-6">
-              <div className="flex items-center gap-2 mb-2">
-                <Truck className="h-5 w-5 text-organic-600" />
-                <span className="font-medium">
-                  {product.stockQuantity > 0
-                    ? "Free delivery on orders over $50"
-                    : "Out of stock"}
-                </span>
-              </div>
-
-              {product.stockQuantity > 0 && (
-                <p className="text-sm text-muted-foreground ml-7">
-                  Usually ships within 1-2 business days
-                </p>
-              )}
             </div>
 
             {product.stockQuantity > 0 ? (
@@ -278,12 +282,15 @@ const ProductDetailsPage: FC<ProductDetailsPageProps> = ({
               <ul className="space-y-1 text-sm">
                 <li>
                   <span className="text-muted-foreground">Category:</span>{" "}
-                  {product.category}
+                  {product?.category?.name}
                 </li>
-                <li>
-                  <span className="text-muted-foreground">Tags:</span>{" "}
-                  {product.tags.join(", ")}
-                </li>
+
+                {product.tags?.length > 0 && (
+                  <li>
+                    <span className="text-muted-foreground">Tags:</span>{" "}
+                    {product.tags.join(", ")}
+                  </li>
+                )}
                 {product.isSeasonal && (
                   <li>
                     <span className="text-muted-foreground">Seasonal:</span> Yes

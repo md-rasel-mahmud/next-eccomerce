@@ -13,8 +13,8 @@ interface StoreState {
 // Define action types
 type Action =
   | { type: "ADD_TO_CART"; product: Product; quantity?: number }
-  | { type: "REMOVE_FROM_CART"; productId: string }
-  | { type: "UPDATE_QUANTITY"; productId: string; quantity: number }
+  | { type: "REMOVE_FROM_CART"; product: string }
+  | { type: "UPDATE_QUANTITY"; product: string; quantity: number }
   | { type: "CLEAR_CART" };
 
 // Initial state

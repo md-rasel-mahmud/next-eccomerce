@@ -1,3 +1,4 @@
+// "use client";
 import FormInputWrapper from "@/components/common/form/FormInputWrapper";
 import MediaModal from "@/components/common/MediaModal";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { Control, Controller, FieldValues, useWatch } from "react-hook-form";
 import TooltipSlider from "rc-slider";
+import RichTextEditor from "@/components/common/form/RichTextEditor";
 
 // types.ts
 export type InputType =
@@ -38,7 +40,8 @@ export type InputType =
   | "multiple-checkbox"
   | "switch"
   | "media"
-  | "two-way-range";
+  | "two-way-range"
+  | "rich-editor";
 
 export type OptionType = {
   label: string;
@@ -68,6 +71,8 @@ export interface FormInputConfig<Name extends string = string> {
   isMultiple?: boolean; // for file input
   min?: number; // for range inputs
   max?: number; // for range inputs
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  extraOnChange?: (value: any) => void; // for custom onChange logic
 }
 
 interface FormInputProps {
@@ -123,8 +128,17 @@ export const FormInput = ({ formData, control }: FormInputProps) => {
                 disabled={input.disabled}
                 placeholder={input.placeholder}
                 className={cn(input.inputClassName)}
+                onWheel={(e) => {
+                  if (input.type === "number") {
+                    e.currentTarget.blur();
+                  }
+                }}
                 onChange={(e) => {
                   const value = e.target.value;
+
+                  if (input.extraOnChange) {
+                    input.extraOnChange(value);
+                  }
 
                   if (input.type === "number") {
                     // Handle empty string separately (user clears the input)
@@ -358,6 +372,23 @@ export const FormInput = ({ formData, control }: FormInputProps) => {
                   ))}
                 </SelectContent>
               </Select>
+            </FormInputWrapper>
+          )}
+        />
+      );
+    }
+    if (input.type === "rich-editor" && visible) {
+      acc.push(
+        <Controller
+          key={index}
+          name={input.name}
+          control={control}
+          render={({ field, fieldState }) => (
+            <FormInputWrapper
+              {...input}
+              errorMessage={fieldState?.error?.message}
+            >
+              <RichTextEditor field={field} />
             </FormInputWrapper>
           )}
         />

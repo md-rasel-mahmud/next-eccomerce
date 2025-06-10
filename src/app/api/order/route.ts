@@ -4,10 +4,11 @@ import {
   validateRequest,
 } from "@/helpers/validation-request";
 import { connectDB } from "@/lib/db";
-import { productValidation } from "@/lib/models/product/product.dto";
-import { Product } from "@/lib/models/product/product.model";
+import { checkoutValidationBackend } from "@/lib/models/checkout/checkout.dto";
+import { Order } from "@/lib/models/order/order.model";
 import { NextRequest, NextResponse } from "next/server";
 
+// GET - get all orders
 export async function GET(req: NextRequest) {
   try {
     await connectDB();
@@ -52,7 +53,7 @@ export async function GET(req: NextRequest) {
 
     pipeline.push({ $skip: pagination.skip });
 
-    const products = await Product.aggregate(pipeline);
+    const orders = await Order.aggregate(pipeline);
 
     // For total count, do a similar pipeline without skip, limit, sort
     const countPipeline = [
@@ -64,12 +65,12 @@ export async function GET(req: NextRequest) {
 
     countPipeline.push({ $count: "total" });
 
-    const countResult = await Product.aggregate(countPipeline);
+    const countResult = await Order.aggregate(countPipeline);
     const total = countResult.length > 0 ? countResult[0].total : 0;
 
     return NextResponse.json({
       status: 200,
-      message: "Products fetched successfully",
+      message: "Orders fetched successfully",
       pagination: {
         page: pagination.page,
         limit: pagination.limit,
@@ -78,26 +79,29 @@ export async function GET(req: NextRequest) {
         totalPages: Math.ceil(total / pagination.limit),
         totalItems: total,
       },
-      data: products,
+      data: orders,
     });
   } catch (error) {
-    console.error("Product Fetch Error:", error);
+    console.error("Order Fetch Error:", error);
     return NextResponse.json(
       {
         status: 500,
-        message: "Failed to fetch products",
+        message: "Failed to fetch orders",
       },
       { status: 500 }
     );
   }
 }
 
-// POST - create a new product
+// POST - create a new order
 export async function POST(request: NextRequest) {
   try {
     await connectDB();
 
-    const validatedBody = await validateRequest(request, productValidation);
+    const validatedBody = await validateRequest(
+      request,
+      checkoutValidationBackend
+    );
 
     if (!validatedBody.success) {
       return NextResponse.json(
@@ -106,13 +110,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const newProduct = new Product(validatedBody.data);
+    const newOrder = new Order(validatedBody.data);
 
-    const data = await newProduct.save();
+    const data = await newOrder.save();
 
     const response = {
       status: 201,
-      message: "Product created successfully",
+      message: "Order created successfully",
       data,
     };
 
@@ -122,7 +126,7 @@ export async function POST(request: NextRequest) {
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    console.error("Error creating product:", error);
+    console.error("Error creating order:", error);
 
     if (error?.code === 11000) {
       const errors = parseMongooseDuplicateKeyError(error);
@@ -135,7 +139,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
-        message: "Failed to create product",
+        message: "Failed to create order",
         error: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }

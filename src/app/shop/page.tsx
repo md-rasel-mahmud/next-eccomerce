@@ -7,7 +7,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import axiosRequest from "@/lib/axios";
-import { debounce, setQueryStringBySearchParams } from "@/lib/utils";
+import {
+  debounce,
+  getCurrencySymbol,
+  setQueryStringBySearchParams,
+} from "@/lib/utils";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -75,7 +79,7 @@ const ProductsPage: React.FC = () => {
       });
 
       router.push(`${pathname}?${query}`);
-    }, 100),
+    }, 500),
     [searchParams, pathname]
   );
 
@@ -242,7 +246,8 @@ const ProductsPage: React.FC = () => {
                 </h3>
                 <div>
                   <p className="text-sm text-muted-foreground mb-2">
-                    ৳{priceRange[0]} - ৳{priceRange[1]}
+                    {getCurrencySymbol("BDT")} {priceRange[0]} -{" "}
+                    {getCurrencySymbol("BDT")} {priceRange[1]}
                   </p>
                 </div>
                 <TwoWaySlider

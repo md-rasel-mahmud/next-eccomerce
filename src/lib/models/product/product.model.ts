@@ -12,6 +12,7 @@ const ProductSchema: Schema = new Schema<IProduct>(
     category: { type: Types.ObjectId, required: true, ref: "Category" },
     tags: [{ type: String }],
     badge: { type: String },
+    tax: { type: Number, default: 0 },
     stockQuantity: { type: Number, default: 0 },
     averageRating: { type: Number, default: 0 },
     totalReviews: { type: Number, default: 0 },

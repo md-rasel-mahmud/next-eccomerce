@@ -149,3 +149,14 @@ export function debounce<T extends (...args: any[]) => void>(
     }, delay);
   };
 }
+
+type Currency = "BDT" | "USD" | "INR";
+
+export const getCurrencySymbol = (currency: Currency): string => {
+  const symbols: Record<Currency, string> = {
+    BDT: "৳",
+    USD: "$",
+    INR: "₹",
+  };
+  return symbols[currency];
+};

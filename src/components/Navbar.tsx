@@ -10,7 +10,6 @@ import {
   LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useStore } from "@/context/StoreContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,11 +36,13 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSelector } from "react-redux";
+import { RootState } from "@/lib/store/store";
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const { state } = useStore();
+  const state = useSelector((state: RootState) => state.cart);
   const { data } = useSession();
 
   const { data: categoryList, isLoading: categoryListLoading } = useSWR(

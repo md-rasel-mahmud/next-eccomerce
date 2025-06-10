@@ -9,44 +9,64 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useStore } from "@/context/StoreContext";
-import { toast } from "@/components/ui/use-toast";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
+import { getCurrencySymbol } from "@/lib/utils";
+import { RootState } from "@/lib/store/store";
+import { useDispatch, useSelector } from "react-redux";
+import { removeFromCart, updateQuantity } from "@/lib/store/slices/cart.slice";
 
 const CartPage = () => {
-  const { state, dispatch } = useStore();
+  // const { state, dispatch } = useStore();
   const router = useRouter();
   const { data } = useSession();
+  const dispatch = useDispatch();
   const user = data?.user;
 
-  const updateQuantity = (productId: string, newQuantity: number) => {
+  const state = useSelector((state: RootState) => state.cart);
+
+  const handleUpdateQuantity = (
+    product: string,
+    newQuantity: number,
+    stockQuantity: number = 0
+  ) => {
     if (newQuantity < 1) return;
 
-    dispatch({
-      type: "UPDATE_QUANTITY",
-      productId,
-      quantity: newQuantity,
-    });
+    if (newQuantity > stockQuantity) {
+      toast.error(
+        `Only ${stockQuantity} items available in stock for this product`
+      );
+      return;
+    }
+
+    dispatch(
+      updateQuantity({
+        productId: product,
+        quantity: newQuantity,
+      })
+    );
   };
 
-  const removeFromCart = (productId: string) => {
-    dispatch({
-      type: "REMOVE_FROM_CART",
-      productId,
-    });
+  const handleRemoveFromCart = (product: string) => {
+    dispatch(removeFromCart(product));
 
-    toast({
-      title: "Item removed",
-      description: "The item was removed from your cart",
-    });
+    toast.success("Product removed from cart");
   };
 
-  const subtotal = state.cart.reduce(
-    (sum, item) => sum + item.product.price * item.quantity,
-    0
+  const { subtotal, discount } = state.cart.reduce(
+    (sum, item) => {
+      sum.subtotal += item.product.price * item.quantity;
+      sum.discount += item.product.discount;
+
+      return sum;
+    },
+    {
+      subtotal: 0,
+      discount: 0,
+    }
   );
 
   const shippingCost = subtotal > 0 ? 5.99 : 0;
@@ -54,15 +74,12 @@ const CartPage = () => {
 
   const handleCheckout = () => {
     if (!user) {
+      toast.error("Please log in to proceed to checkout");
       router.push("/login");
-      toast({
-        title: "Login Required",
-        description: "Please log in to continue with checkout",
-      });
       return;
     }
 
-    router.push("/shipping");
+    router.push("/checkout");
   };
 
   return (
@@ -79,7 +96,7 @@ const CartPage = () => {
               Looks like you haven&apos;t added any products to your cart yet.
             </p>
             <Button
-              onClick={() => router.push("/products")}
+              onClick={() => router.push("/shop")}
               className="bg-organic-500 hover:bg-organic-600"
             >
               Continue Shopping
@@ -112,7 +129,7 @@ const CartPage = () => {
                     <div className="text-organic-500 font-medium mt-1">
                       ${item.product.price.toFixed(2)}
                     </div>
-                    {item.product.inStock ? (
+                    {item.product.stockQuantity > 0 ? (
                       <div className="text-green-600 text-sm mt-1">
                         In Stock
                       </div>
@@ -127,20 +144,43 @@ const CartPage = () => {
                       variant="outline"
                       size="icon"
                       onClick={() =>
-                        updateQuantity(item.productId, item.quantity - 1)
+                        handleUpdateQuantity(
+                          item.productId,
+                          item.quantity - 1,
+                          item.product.stockQuantity
+                        )
                       }
                       disabled={item.quantity <= 1}
                     >
                       -
                     </Button>
-                    <span className="w-8 text-center">{item.quantity}</span>
+
+                    <input
+                      type="number"
+                      value={item.quantity}
+                      onChange={(e) =>
+                        handleUpdateQuantity(
+                          item.productId,
+                          parseInt(e.target.value) || 1,
+                          item.product.stockQuantity
+                        )
+                      }
+                      className="w-16 text-center border rounded-md p-1 h-10"
+                      min="1"
+                      max={item.product.stockQuantity}
+                      disabled={item.product.stockQuantity === 0}
+                    />
                     <Button
                       variant="outline"
                       size="icon"
                       onClick={() =>
-                        updateQuantity(item.productId, item.quantity + 1)
+                        handleUpdateQuantity(
+                          item.productId,
+                          item.quantity + 1,
+                          item.product.stockQuantity
+                        )
                       }
-                      disabled={!item.product.inStock}
+                      disabled={item.product.stockQuantity === 0}
                     >
                       +
                     </Button>
@@ -151,7 +191,7 @@ const CartPage = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => removeFromCart(item.productId)}
+                    onClick={() => handleRemoveFromCart(item.productId)}
                     className="text-red-500 hover:text-red-700 hover:bg-red-50"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -168,15 +208,25 @@ const CartPage = () => {
                 <CardContent className="space-y-4">
                   <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
+                    <span>
+                      {getCurrencySymbol("BDT")} {subtotal.toFixed(2)}
+                    </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Shipping</span>
-                    <span>${shippingCost.toFixed(2)}</span>
-                  </div>
+
+                  {discount > 0 && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Discount</span>
+                      <span>
+                        {getCurrencySymbol("BDT")} {discount.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+
                   <div className="border-t pt-4 flex justify-between font-medium">
                     <span>Total</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>
+                      {getCurrencySymbol("BDT")} {total.toFixed(2)}
+                    </span>
                   </div>
                 </CardContent>
                 <CardFooter>

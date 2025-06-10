@@ -4,6 +4,7 @@ import {
   PackageCheck,
   List,
   ChartBar,
+  Truck,
 } from "lucide-react";
 
 export const adminSidebarMenu = [
@@ -21,6 +22,11 @@ export const adminSidebarMenu = [
     title: "Products",
     path: "/admin/products",
     icon: <Package className="mr-2 h-4 w-4" />,
+  },
+  {
+    title: "Shipping",
+    path: "/admin/shipping",
+    icon: <Truck className="mr-2 h-4 w-4" />,
   },
   {
     title: "Orders",

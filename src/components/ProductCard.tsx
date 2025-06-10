@@ -4,28 +4,26 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Star, ShoppingCart, Check } from "lucide-react";
-import { useStore } from "@/context/StoreContext";
 import { Product } from "@/types/types";
 import Link from "next/link";
 import Image from "next/image";
+import { getCurrencySymbol } from "@/lib/utils";
+import { RootState } from "@/lib/store/store";
+import { useDispatch, useSelector } from "react-redux";
+import { addToCart } from "@/lib/store/slices/cart.slice";
 
 interface ProductCardProps {
   product: Product;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const { state, dispatch } = useStore();
-  const isInCart = state.cart.some((item) => item.productId === product._id);
+  const cart = useSelector((state: RootState) => state.cart.cart);
+  const dispatch = useDispatch();
+
+  const isInCart = cart.some((item) => item.productId === product._id);
 
   const handleAddToCart = () => {
-    dispatch({ type: "ADD_TO_CART", product });
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(price);
+    dispatch(addToCart({ product, quantity: 1 }));
   };
 
   return (
@@ -43,15 +41,21 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           {/* Product badges */}
           <div className="absolute top-2 left-2 flex flex-col gap-1">
             {product.isSeasonal && (
-              <Badge className="bg-earth-500 hover:bg-earth-500 shadow">
+              <Badge className="bg-organic-500 hover:bg-organic-500 shadow">
                 Seasonal
               </Badge>
             )}
+            {product.isFeatured && (
+              <Badge className="bg-blue-500 hover:bg-blue-500 shadow">
+                Featured
+              </Badge>
+            )}
             {!!product.badge && (
-              <Badge className="bg-organic-500 hover:bg-organic-600">
+              <Badge className="bg-earth-500 hover:bg-earth-600">
                 {product?.badge}
               </Badge>
             )}
+
             {product.stockQuantity === 0 && (
               <Badge variant="destructive">Out of Stock</Badge>
             )}
@@ -83,15 +87,15 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           {product.salePrice ? (
             <>
               <span className="font-medium text-lg">
-                {formatPrice(product.salePrice)}
+                {getCurrencySymbol("BDT") + " " + product.salePrice}
               </span>
               <span className="text-muted-foreground line-through">
-                {formatPrice(product.price)}
+                {getCurrencySymbol("BDT") + " " + product.price}
               </span>
             </>
           ) : (
             <span className="font-medium text-lg">
-              {formatPrice(product.price)}
+              {getCurrencySymbol("BDT") + " " + product.price}
             </span>
           )}
         </div>

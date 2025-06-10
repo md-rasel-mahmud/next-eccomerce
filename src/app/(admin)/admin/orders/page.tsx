@@ -45,13 +45,13 @@ const AdminOrders: React.FC = () => {
       userId: "user1",
       items: [
         {
-          productId: "1",
+          product: "1",
           productName: "Khejurer Gur (Date Molasses)",
           quantity: 2,
           price: 12.99,
         },
         {
-          productId: "2",
+          product: "2",
           productName: "Organic Honey",
           quantity: 1,
           price: 18.99,
@@ -76,7 +76,7 @@ const AdminOrders: React.FC = () => {
       userId: "user2",
       items: [
         {
-          productId: "3",
+          product: "3",
           productName: "Fresh Mangoes (Himsagar)",
           quantity: 3,
           price: 15.99,
@@ -101,13 +101,13 @@ const AdminOrders: React.FC = () => {
       userId: "user3",
       items: [
         {
-          productId: "5",
+          product: "5",
           productName: "Organic Rice (Kataribhog)",
           quantity: 2,
           price: 9.99,
         },
         {
-          productId: "6",
+          product: "6",
           productName: "Coconut Oil (Cold Pressed)",
           quantity: 1,
           price: 16.99,
@@ -132,7 +132,7 @@ const AdminOrders: React.FC = () => {
       userId: "user4",
       items: [
         {
-          productId: "4",
+          product: "4",
           productName: "Fresh Lychee",
           quantity: 2,
           price: 14.99,
@@ -157,13 +157,13 @@ const AdminOrders: React.FC = () => {
       userId: "user5",
       items: [
         {
-          productId: "7",
+          product: "7",
           productName: "Fresh Jackfruit",
           quantity: 1,
           price: 19.99,
         },
         {
-          productId: "8",
+          product: "8",
           productName: "Organic Mustard Oil",
           quantity: 2,
           price: 11.99,
@@ -464,7 +464,7 @@ const AdminOrders: React.FC = () => {
                   </TableHeader>
                   <TableBody>
                     {currentOrder.items.map((item) => (
-                      <TableRow key={item.productId}>
+                      <TableRow key={item.product}>
                         <TableCell>{item.productName}</TableCell>
                         <TableCell>{item.quantity}</TableCell>
                         <TableCell>${item.price.toFixed(2)}</TableCell>
