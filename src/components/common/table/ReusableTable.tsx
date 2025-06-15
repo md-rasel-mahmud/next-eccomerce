@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { setQueryStringBySearchParams } from "@/lib/utils";
+import { cn, setQueryStringBySearchParams } from "@/lib/utils";
 
 export interface ColumnConfig<T> {
   header: string;
@@ -43,6 +43,8 @@ interface ReusableTableProps<T> {
   onDelete?: (row: T) => void;
   hasAction?: boolean;
   isLoading?: boolean;
+  hasPagination?: boolean;
+  className?: string;
   pagination?: {
     limit: number;
     totalPages: number;
@@ -58,6 +60,8 @@ export function ReusableTable<T extends { _id: string }>({
   onDelete,
   hasAction = false,
   isLoading = false,
+  hasPagination = true,
+  className,
 }: ReusableTableProps<T>) {
   const skeletonRows = 10;
   const searchParams = useSearchParams();
@@ -85,7 +89,9 @@ export function ReusableTable<T extends { _id: string }>({
   };
 
   return (
-    <div className="bg-white rounded-md shadow overflow-hidden">
+    <div
+      className={cn("bg-white rounded-md shadow overflow-hidden", className)}
+    >
       <Table>
         <TableHeader>
           <TableRow className="bg-gray-300">
@@ -166,73 +172,75 @@ export function ReusableTable<T extends { _id: string }>({
       </Table>
 
       {/* Pagination */}
-      <div className="py-4 border-t flex items-center gap-4 flex-wrap">
-        <Pagination>
-          <PaginationContent>
-            <p className="text-sm text-gray-500 mr-2">
-              Total: <b>{totalItems}</b> items
-            </p>
+      {hasPagination && (
+        <div className="py-4 border-t flex items-center gap-4 flex-wrap">
+          <Pagination>
+            <PaginationContent>
+              <p className="text-sm text-gray-500 mr-2">
+                Total: <b>{totalItems}</b> items
+              </p>
 
-            <Select value={currentLimit} onValueChange={handleLimitChange}>
-              <SelectTrigger className="w-28">
-                <SelectValue placeholder={currentLimit} />
-              </SelectTrigger>
-              <SelectContent>
-                {[5, 10, 20, 50, 100].map((limit) => (
-                  <SelectItem key={limit} value={limit.toString()}>
-                    {limit} items
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <Select value={currentLimit} onValueChange={handleLimitChange}>
+                <SelectTrigger className="w-28">
+                  <SelectValue placeholder={currentLimit} />
+                </SelectTrigger>
+                <SelectContent>
+                  {[5, 10, 20, 50, 100].map((limit) => (
+                    <SelectItem key={limit} value={limit.toString()}>
+                      {limit} items
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
-                className={
-                  currentPage === 1
-                    ? "pointer-events-none opacity-50"
-                    : "cursor-pointer"
-                }
-              />
-            </PaginationItem>
-
-            {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
-              const pageNumber = i + 1;
-              return (
-                <PaginationItem key={i}>
-                  <PaginationLink
-                    onClick={() => handlePageChange(pageNumber)}
-                    isActive={currentPage === pageNumber}
-                    className="cursor-pointer"
-                  >
-                    {pageNumber}
-                  </PaginationLink>
-                </PaginationItem>
-              );
-            })}
-
-            {totalPages > 5 && (
               <PaginationItem>
-                <PaginationEllipsis />
+                <PaginationPrevious
+                  onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
+                  className={
+                    currentPage === 1
+                      ? "pointer-events-none opacity-50"
+                      : "cursor-pointer"
+                  }
+                />
               </PaginationItem>
-            )}
 
-            <PaginationItem>
-              <PaginationNext
-                onClick={() =>
-                  handlePageChange(Math.min(currentPage + 1, totalPages))
-                }
-                className={
-                  currentPage === totalPages
-                    ? "pointer-events-none opacity-50"
-                    : "cursor-pointer"
-                }
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      </div>
+              {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
+                const pageNumber = i + 1;
+                return (
+                  <PaginationItem key={i}>
+                    <PaginationLink
+                      onClick={() => handlePageChange(pageNumber)}
+                      isActive={currentPage === pageNumber}
+                      className="cursor-pointer"
+                    >
+                      {pageNumber}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              })}
+
+              {totalPages > 5 && (
+                <PaginationItem>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              )}
+
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() =>
+                    handlePageChange(Math.min(currentPage + 1, totalPages))
+                  }
+                  className={
+                    currentPage === totalPages
+                      ? "pointer-events-none opacity-50"
+                      : "cursor-pointer"
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
     </div>
   );
 }

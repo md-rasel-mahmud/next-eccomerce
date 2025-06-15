@@ -21,9 +21,7 @@ export async function GET(req: NextRequest) {
     // Start aggregation pipeline
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const pipeline: any[] = [
-      {
-        $unwind: "$items",
-      },
+      { $unwind: "$items" },
       {
         $lookup: {
           from: "products",
@@ -64,7 +62,7 @@ export async function GET(req: NextRequest) {
       },
     ];
 
-    // If categorySlug is provided, add match stage for category slug + other filters
+    // Filter by category slug if provided
     if (categorySlug) {
       pipeline.push({
         $match: {
@@ -72,28 +70,28 @@ export async function GET(req: NextRequest) {
           "category.slug": categorySlug,
         },
       });
-    } else {
-      // No categorySlug filter, just apply other filters if any
-      if (Object.keys(filter).length > 0) {
-        pipeline.push({ $match: filter });
-      }
+    } else if (Object.keys(filter).length > 0) {
+      pipeline.push({ $match: filter });
     }
 
-    if (Object.keys(sort).length > 1) {
+    // Sort stage
+    if (sort && Object.keys(sort).length > 0) {
       pipeline.push({ $sort: sort });
+    } else {
+      pipeline.push({ $sort: { createdAt: -1 } });
     }
 
+    // Add pagination stages
     pipeline.push({ $skip: pagination.skip });
+    pipeline.push({ $limit: pagination.limit });
 
     const orders = await Order.aggregate(pipeline);
 
-    // For total count, do a similar pipeline without skip, limit, sort
-    const countPipeline = [
-      ...pipeline.filter(
-        (stage) =>
-          !("$skip" in stage) && !("$limit" in stage) && !("$sort" in stage)
-      ),
-    ];
+    // Count total matching documents
+    const countPipeline = pipeline.filter(
+      (stage) =>
+        !("$skip" in stage) && !("$limit" in stage) && !("$sort" in stage)
+    );
 
     countPipeline.push({ $count: "total" });
 

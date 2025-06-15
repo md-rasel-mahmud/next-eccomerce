@@ -1,17 +1,39 @@
+"use client";
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { User, Package, DollarSign } from "lucide-react";
+import { User, Package, DollarSign, Eye } from "lucide-react";
 import { products } from "@/data/products";
+import {
+  ColumnConfig,
+  ReusableTable,
+} from "@/components/common/table/ReusableTable";
+import { OrderTypeWithId } from "@/lib/models/order/order.dto";
+import useSWR from "swr";
+import axiosRequest from "@/lib/axios";
+import { useRouter } from "next/navigation";
+import { cn, getCurrencySymbol, getOrderStatusBadgeClass } from "@/lib/utils";
+import { getOrderStatusIcon } from "@/helpers/get-order-status-icon";
+import { PaymentMethods } from "@/enums/PaymentMethods.enum";
+import moment from "moment";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 
 const AdminDashboard: React.FC = () => {
+  const router = useRouter();
+
+  const { data: orderList, isLoading: orderListLoading } = useSWR(
+    `/order?page=1&limit=5=sortBy=createdAt&sortOrder=desc`,
+    (url) => axiosRequest.get(url).then((res) => res.data),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
+  );
+
   // Simulated data for the dashboard
   const stats = {
     totalRevenue: products.reduce((sum, product) => sum + product.price, 0),
@@ -48,6 +70,96 @@ const AdminDashboard: React.FC = () => {
       },
     ],
   };
+
+  const columns: ColumnConfig<OrderTypeWithId>[] = [
+    {
+      header: "Order ID",
+      accessor: (row) => <p className="font-semibold w-20">{row.orderId}</p>,
+    },
+    {
+      header: "User",
+      accessor: (row) => {
+        return (
+          <div>
+            <p className="font-semibold">{row.fullName}</p>
+            <p className="text-sm text-muted-foreground">{row.phone}</p>
+            {
+              // address
+            }
+            <small className="text-xs text-muted-foreground">
+              {row.address}- {row.postalCode}, {row.district}, {row.division}
+            </small>
+          </div>
+        );
+      },
+    },
+    {
+      header: "Total",
+      accessor: (row) => (
+        <div className="inline-flex items-center gap-1">
+          <span>{getCurrencySymbol("BDT")}</span>{" "}
+          <span>{row.totalAmount.toFixed(2)}</span>
+        </div>
+      ),
+    },
+    {
+      header: "Status",
+      accessor: (row) => (
+        <div className="space-y-2 flex flex-col justify-center items-start gap-2">
+          <span
+            className={cn(
+              "inline-flex items-center px-2 py-1 text-xs rounded-full",
+              getOrderStatusBadgeClass(row.status)
+            )}
+          >
+            {getOrderStatusIcon(row.status)}
+            {row.status}
+          </span>
+
+          <span
+            className={cn(
+              "inline-flex items-center px-2 py-1 text-xs rounded-full bg-pink-100 text-pink-800"
+            )}
+          >
+            {row.paymentMethod === PaymentMethods.COD
+              ? "Cash on Delivery"
+              : row.paymentMethod === PaymentMethods.BKASH
+              ? "Bkash"
+              : row.paymentMethod === PaymentMethods.BANK_TRANSFER
+              ? "Bank Transfer"
+              : "Unknown"}
+          </span>
+        </div>
+      ),
+    },
+    {
+      header: "Date",
+      accessor: (row) => moment(row.createdAt).format("YYYY-MM-DD HH:mm A"),
+    },
+
+    {
+      header: "Actions",
+      accessor: (row) => (
+        <div className="flex items-center space-x-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  router.push(`/order-view?id=${row._id}`);
+                }}
+              >
+                <Eye />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>View the order details</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -98,45 +210,22 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       {/* Recent Orders Table */}
+
       <Card>
         <CardHeader>
           <CardTitle>Recent Orders</CardTitle>
         </CardHeader>
+
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Order ID</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {stats.recentOrders.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell className="font-medium">{order.id}</TableCell>
-                  <TableCell>{order.customer}</TableCell>
-                  <TableCell>${order.amount.toFixed(2)}</TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-block px-2 py-1 text-xs rounded-full ${
-                        order.status === "delivered"
-                          ? "bg-green-100 text-green-800"
-                          : order.status === "shipped"
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-yellow-100 text-yellow-800"
-                      }`}
-                    >
-                      {order.status}
-                    </span>
-                  </TableCell>
-                  <TableCell>{order.date}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <ReusableTable<OrderTypeWithId>
+            className="shadow-none border"
+            hasPagination={false}
+            data={orderList?.data || []}
+            columns={columns}
+            pagination={orderList?.pagination}
+            hasAction={false}
+            isLoading={orderListLoading}
+          />
         </CardContent>
       </Card>
     </div>

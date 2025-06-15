@@ -85,7 +85,7 @@ type QueryParams = {
   limit?: string;
   sortBy?: string;
   sortOrder?: SortOrder;
-  category?: string; // slug এর জন্য
+  category?: string;
   [key: string]: unknown;
 };
 

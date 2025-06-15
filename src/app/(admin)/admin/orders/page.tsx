@@ -1,6 +1,6 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { Eye, Package, PackageCheck, PackageX } from "lucide-react";
+import { Eye } from "lucide-react";
 import { useFetchMutation } from "@/hooks/use-fetch-mutation";
 import axiosRequest from "@/lib/axios";
 import useSWR, { mutate } from "swr";
@@ -10,8 +10,8 @@ import {
   ReusableTable,
 } from "@/components/common/table/ReusableTable";
 import { useRouter, useSearchParams } from "next/navigation";
-import { cn, getCurrencySymbol } from "@/lib/utils";
-import { IOrder, OrderTypeWithId } from "@/lib/models/order/order.dto";
+import { cn, getCurrencySymbol, getOrderStatusBadgeClass } from "@/lib/utils";
+import { OrderTypeWithId } from "@/lib/models/order/order.dto";
 import { OrderStatus } from "@/enums/Status.enum";
 import moment from "moment";
 import {
@@ -29,36 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PaymentMethods } from "@/enums/PaymentMethods.enum";
-
-const getStatusBadgeClass = (status: IOrder["status"]) => {
-  switch (status) {
-    case OrderStatus.DELIVERED:
-      return "bg-green-100 text-green-800";
-    case OrderStatus.SHIPPED:
-      return "bg-blue-100 text-blue-800";
-    case OrderStatus.PROCESSING:
-      return "bg-yellow-100 text-yellow-800";
-    case OrderStatus.PENDING:
-      return "bg-orange-100 text-orange-800";
-    case OrderStatus.CANCELLED:
-      return "bg-red-100 text-red-800";
-    default:
-      return "bg-gray-100 text-gray-800";
-  }
-};
-
-const getStatusIcon = (status: IOrder["status"]) => {
-  switch (status) {
-    case OrderStatus.DELIVERED:
-      return <PackageCheck className="h-4 w-4 mr-1 text-green-600" />;
-    case OrderStatus.SHIPPED:
-      return <Package className="h-4 w-4 mr-1 text-blue-600" />;
-    case OrderStatus.CANCELLED:
-      return <PackageX className="h-4 w-4 mr-1 text-red-600" />;
-    default:
-      return <Package className="h-4 w-4 mr-1" />;
-  }
-};
+import { getOrderStatusIcon } from "@/helpers/get-order-status-icon";
 
 const AdminOrders: React.FC = () => {
   // const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -75,7 +46,6 @@ const AdminOrders: React.FC = () => {
       revalidateOnReconnect: false,
     }
   );
-  console.log("orderList", orderList);
 
   const { isLoading: orderStatusUpdateLoading, mutateFn } = useFetchMutation();
 
@@ -147,14 +117,14 @@ const AdminOrders: React.FC = () => {
     {
       header: "Status",
       accessor: (row) => (
-        <div className="space-y-2">
+        <div className="space-y-2 flex flex-col justify-center items-start gap-2">
           <span
             className={cn(
               "inline-flex items-center px-2 py-1 text-xs rounded-full",
-              getStatusBadgeClass(row.status)
+              getOrderStatusBadgeClass(row.status)
             )}
           >
-            {getStatusIcon(row.status)}
+            {getOrderStatusIcon(row.status)}
             {row.status}
           </span>
 
