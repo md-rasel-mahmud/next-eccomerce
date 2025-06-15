@@ -26,5 +26,5 @@ export async function middleware(req: NextRequest) {
 
 // Define protected routes
 export const config = {
-  matcher: ["/dashboard/:path*", "/admin/:path*", "/cart", "/profile"],
+  matcher: ["/user/:path*", "/admin/:path*", "/cart", "/order-view"],
 };

@@ -80,7 +80,7 @@ const PaymentPage = () => {
     0
   );
 
-  const { handleSubmit, control, reset } = useForm({
+  const { handleSubmit, control, watch, reset } = useForm({
     defaultValues: CHECKOUT_DEFAULT_VALUES,
     resolver: zodResolver(checkoutValidation),
     mode: "all",
@@ -265,6 +265,7 @@ const PaymentPage = () => {
                 <CardTitle>Select Payment Method</CardTitle>
                 <CardDescription>Choose how you want to pay</CardDescription>
               </CardHeader>
+
               <CardContent>
                 <RadioGroup
                   value={paymentMethod}
@@ -278,6 +279,7 @@ const PaymentPage = () => {
                       value={PaymentMethods.COD}
                       id={PaymentMethods.COD}
                     />
+
                     <Label
                       htmlFor={PaymentMethods.COD}
                       className="flex items-center flex-1 cursor-pointer"
@@ -294,11 +296,35 @@ const PaymentPage = () => {
                 </RadioGroup>
 
                 <div className="mt-8 space-y-4">
-                  <div className="flex justify-between border-t border-b py-3">
-                    <span className="font-medium">Total Amount:</span>
-                    <span className="font-semibold text-lg">
-                      {getCurrencySymbol("BDT")} {cartTotal.toFixed(2)}
-                    </span>
+                  <div className="space-y-3 border-t border-b py-3">
+                    <div className="flex justify-between gap-2 items-center">
+                      <span>Shipping Charge:</span>
+                      <span>
+                        {getCurrencySymbol("BDT")}{" "}
+                        {(
+                          (
+                            shippingObjectByIdKey?.[watch("shipping")] as
+                              | { charge?: number }
+                              | undefined
+                          )?.charge ?? 0
+                        ).toFixed(2)}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between gap-2 items-center">
+                      <span className="font-medium">Total Amount:</span>
+                      <span className="font-semibold text-lg">
+                        {getCurrencySymbol("BDT")}{" "}
+                        {(
+                          cartTotal +
+                          ((
+                            shippingObjectByIdKey?.[watch("shipping")] as
+                              | { charge?: number }
+                              | undefined
+                          )?.charge ?? 0)
+                        ).toFixed(2)}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </CardContent>

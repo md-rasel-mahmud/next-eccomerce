@@ -1,5 +1,5 @@
 import { PaymentMethods } from "@/enums/PaymentMethods.enum";
-import { Status } from "@/enums/Status.enum";
+import { OrderStatus } from "@/enums/Status.enum";
 import z from "zod";
 
 const CHECKOUT_DEFAULT_VALUES = {
@@ -43,10 +43,13 @@ const checkoutValidationBackend = z
     status: z
       .string()
       .optional()
-      .default(Status.PENDING)
-      .refine((val) => Object.values(Status).includes(val as Status), {
-        message: "Invalid order status",
-      }),
+      .default(OrderStatus.PENDING)
+      .refine(
+        (val) => Object.values(OrderStatus).includes(val as OrderStatus),
+        {
+          message: "Invalid order status",
+        }
+      ),
     paymentMethod: z
       .string()
       .optional()

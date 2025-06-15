@@ -1,5 +1,5 @@
 import { PaymentMethods } from "@/enums/PaymentMethods.enum";
-import { Status } from "@/enums/Status.enum";
+import { OrderStatus } from "@/enums/Status.enum";
 import {
   CheckoutBackendType,
   CheckoutType,
@@ -44,8 +44,8 @@ const OrderSchema: Schema = new Schema<CheckoutBackendType>(
     },
     status: {
       type: String,
-      enum: Status,
-      default: Status.PENDING,
+      enum: OrderStatus,
+      default: OrderStatus.PENDING,
     },
     paymentMethod: {
       type: String,

@@ -30,7 +30,7 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { setQueryStringBySearchParams } from "@/lib/utils";
 
-interface ColumnConfig<T> {
+export interface ColumnConfig<T> {
   header: string;
   accessor: keyof T | ((row: T) => React.ReactNode);
   cellClassName?: string;
@@ -39,8 +39,8 @@ interface ColumnConfig<T> {
 interface ReusableTableProps<T> {
   data: T[];
   columns: ColumnConfig<T>[];
-  onEdit: (row: T) => void;
-  onDelete: (row: T) => void;
+  onEdit?: (row: T) => void;
+  onDelete?: (row: T) => void;
   hasAction?: boolean;
   isLoading?: boolean;
   pagination?: {
@@ -128,21 +128,25 @@ export function ReusableTable<T extends { _id: string }>({
                   {hasAction && (
                     <TableCell>
                       <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => onEdit(row)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="text-red-500 hover:text-red-600"
-                          onClick={() => onDelete(row)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {!!onEdit && (
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => onEdit(row)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {!!onDelete && (
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="text-red-500 hover:text-red-600"
+                            onClick={() => onDelete(row)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   )}
